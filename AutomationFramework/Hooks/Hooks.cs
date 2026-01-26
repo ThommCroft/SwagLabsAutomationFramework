@@ -15,12 +15,14 @@ namespace AutomationFramework.Hooks
         //private WebsiteManager _websiteManager;
 
         private readonly IObjectContainer _objectContainer;
+        private readonly FeatureContext _featureContext;
         private readonly ScenarioContext _scenarioContext;
 
-        public Hooks(IObjectContainer objectContainer, ScenarioContext scenarioContext)
+        public Hooks(IObjectContainer objectContainer, FeatureContext featureCOntext, ScenarioContext scenarioContext)
         {
             //_websiteManager = new WebsiteManager();
             _objectContainer = objectContainer;
+            _featureContext = featureCOntext;
             _scenarioContext = scenarioContext;
         }
 
@@ -39,6 +41,16 @@ namespace AutomationFramework.Hooks
 
             _objectContainer.RegisterInstanceAs(_browser);
             _objectContainer.RegisterInstanceAs(_page);
+        }
+
+
+
+        [AfterScenario]
+        public async Task AfterScenario()
+        {
+            await _browserContext.CloseAsync();
+            await _browser.CloseAsync();
+            _playwrightDriver.Dispose();
         }
     }
 }
