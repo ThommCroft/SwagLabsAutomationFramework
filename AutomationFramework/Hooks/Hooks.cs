@@ -1,28 +1,44 @@
 ﻿using AutomationFramework.Drivers;
 using Microsoft.Playwright;
+using Reqnroll.BoDi;
 
 namespace AutomationFramework.Hooks
 {
+    [Binding]
     public class Hooks
     {
         private IPlaywright _playwrightDriver;
         private IBrowser _browser;
         private IBrowserContext _browserContext;
+        private IPage _page;
 
-        private WebsiteManager _websiteManager;
+        //private WebsiteManager _websiteManager;
 
-        public Hooks()
+        private readonly IObjectContainer _objectContainer;
+        private readonly ScenarioContext _scenarioContext;
+
+        public Hooks(IObjectContainer objectContainer, ScenarioContext scenarioContext)
         {
             //_websiteManager = new WebsiteManager();
+            _objectContainer = objectContainer;
+            _scenarioContext = scenarioContext;
         }
 
         [BeforeScenario]
         public async Task BeforeScenario()
         {
-            //_playwrightDriver = await _websiteManager.InitialiseDriver();
-            //_browser = await _websiteManager.InitialiseBrowser(_playwrightDriver);
-            //_browserContext = await _websiteManager.InitialiseBrowserContext(_browser);
-            //await _websiteManager.InitialisePage(_browser);
+            _playwrightDriver = await Playwright.CreateAsync();
+            _browser = await _playwrightDriver.Chromium.LaunchAsync(new()
+            {
+                Headless = false,
+                SlowMo = 50,
+            });
+
+            _browserContext = await _browser.NewContextAsync(new BrowserNewContextOptions { BypassCSP = true });
+            _page = await _browserContext.NewPageAsync();
+
+            _objectContainer.RegisterInstanceAs(_browser);
+            _objectContainer.RegisterInstanceAs(_page);
         }
     }
 }
