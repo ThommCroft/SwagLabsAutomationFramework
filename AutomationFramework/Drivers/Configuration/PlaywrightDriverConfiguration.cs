@@ -37,7 +37,6 @@ namespace AutomationFramework.Drivers.Configuration
         {
             return await playwrightDriver.Chromium.LaunchAsync(new()
             {
-                // Set Headless to true before running in CI/CD pipeline.
                 Headless = isHeadless,
                 SlowMo = slowMoMilliseconds,
             });
