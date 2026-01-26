@@ -39,11 +39,6 @@ namespace AutomationFramework.Hooks
             _page = _playwrightDriverConfiguration.Page;
         }
 
-        public IBrowserContext? Get_browserContext()
-        {
-            return _browserContext;
-        }
-
         [AfterScenario]
         public async Task AfterScenario()
         {

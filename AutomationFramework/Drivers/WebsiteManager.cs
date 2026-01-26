@@ -1,17 +1,20 @@
-﻿using AutomationFramework.PageObjects;
+﻿using AutomationFramework.Drivers.Configuration;
+using AutomationFramework.PageObjects;
 using Microsoft.Playwright;
 
 namespace AutomationFramework.Drivers
 {
     public class WebsiteManager
     {
-        public IPage Page { get; set; }
+        private readonly IPage _page;
 
         public LoginPageObject LoginPageObject { get; set; }
 
-        public WebsiteManager()
+        public WebsiteManager(IPage page)
         {
-            LoginPageObject = new LoginPageObject(Page);
+            _page = page;
+
+            LoginPageObject = new LoginPageObject(page);
         }
     }
 }
