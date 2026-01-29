@@ -31,7 +31,7 @@ namespace AutomationFramework.Hooks
         public async Task BeforeScenario()
         {
             // Set Headless to true before running in CI/CD pipeline.
-            await _playwrightDriverConfiguration.DriverSetUp(isHeadless: true, slowMoMilliseconds: 50);
+            await _playwrightDriverConfiguration.DriverSetUp(browserType: BrowserTypeEnum.Chromium, isHeadless: false, slowMoMilliseconds: 50);
 
             _playwrightDriver = _playwrightDriverConfiguration.PlaywrightDriver;
             _browser = _playwrightDriverConfiguration.Browser;

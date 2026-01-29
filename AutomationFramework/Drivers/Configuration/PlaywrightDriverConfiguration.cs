@@ -17,10 +17,10 @@ namespace AutomationFramework.Drivers.Configuration
             _objectContainer = objectContainer;
         }
 
-        public async Task DriverSetUp(bool isHeadless, float slowMoMilliseconds)
+        public async Task DriverSetUp(BrowserTypeEnum browserType, bool isHeadless, float slowMoMilliseconds)
         {
             PlaywrightDriver = await InitialisePlaywrightDriver();
-            Browser = await InitialiseBrowser(PlaywrightDriver, isHeadless, slowMoMilliseconds);
+            Browser = await InitialiseBrowser(PlaywrightDriver, browserType, isHeadless, slowMoMilliseconds);
             BrowserContext = await InitialiseBrowserContext(Browser);
             Page = await InitialisePage(BrowserContext);
 
@@ -33,13 +33,49 @@ namespace AutomationFramework.Drivers.Configuration
             return await Playwright.CreateAsync();
         }
 
-        private async Task<IBrowser> InitialiseBrowser(IPlaywright playwrightDriver, bool isHeadless, float slowMoMilliseconds)
+        private async Task<IBrowser> InitialiseBrowser(IPlaywright playwrightDriver, BrowserTypeEnum browserType, bool isHeadless, float slowMoMilliseconds)
         {
-            return await playwrightDriver.Chromium.LaunchAsync(new()
+            return browserType switch
             {
-                Headless = isHeadless,
-                SlowMo = slowMoMilliseconds,
-            });
+                BrowserTypeEnum.Chromium => await playwrightDriver.Chromium.LaunchAsync(new()
+                {
+                    Headless = isHeadless,
+                    SlowMo = slowMoMilliseconds,
+                }),
+                BrowserTypeEnum.FireFox => await playwrightDriver.Firefox.LaunchAsync(new()
+                {
+                    Headless = isHeadless,
+                    SlowMo = slowMoMilliseconds,
+                }),
+                BrowserTypeEnum.MSEdge => await playwrightDriver.Chromium.LaunchAsync(new()
+                {
+                    Channel = "msedge",
+                    Headless = isHeadless,
+                    SlowMo = slowMoMilliseconds,
+                }),
+                BrowserTypeEnum.Chrome => await playwrightDriver.Chromium.LaunchAsync(new()
+                {
+                    Channel = "chrome",
+                    Headless = isHeadless,
+                    SlowMo = slowMoMilliseconds,
+                }),
+                BrowserTypeEnum.WebKit => await playwrightDriver.Webkit.LaunchAsync(new()
+                {
+                    Headless = isHeadless,
+                    SlowMo = slowMoMilliseconds,
+                }),
+                _ => await playwrightDriver.Chromium.LaunchAsync(new()
+                {
+                    Headless = isHeadless,
+                    SlowMo = slowMoMilliseconds,
+                }),
+            };
+
+            //return await playwrightDriver.Chromium.LaunchAsync(new()
+            //{
+            //    Headless = isHeadless,
+            //    SlowMo = slowMoMilliseconds,
+            //});
         }
 
         private static async Task<IBrowserContext> InitialiseBrowserContext(IBrowser browser)
