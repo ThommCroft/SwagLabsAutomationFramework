@@ -19,11 +19,11 @@ namespace AutomationFramework.Hooks
         private IBrowserContext? _browserContext;
         private IPage? _page;
 
-        public Hooks(IObjectContainer objectContainer, FeatureContext featureCOntext, ScenarioContext scenarioContext)
+        public Hooks(IObjectContainer objectContainer, FeatureContext featureContext, ScenarioContext scenarioContext)
         {
             _playwrightDriverConfiguration = new PlaywrightDriverConfiguration(objectContainer);
             _objectContainer = objectContainer;
-            _featureContext = featureCOntext;
+            _featureContext = featureContext;
             _scenarioContext = scenarioContext;
         }
 
@@ -31,7 +31,7 @@ namespace AutomationFramework.Hooks
         public async Task BeforeScenario()
         {
             // Set Headless to true before running in CI/CD pipeline.
-            await _playwrightDriverConfiguration.DriverSetUp(isHeadless: true, slowMoMilliseconds: 50);
+            await _playwrightDriverConfiguration.DriverSetUp(browserType: BrowserTypeEnum.Chromium, isHeadless: true, timeoutMilliseconds: 5000, slowMoMilliseconds: 5000);
 
             _playwrightDriver = _playwrightDriverConfiguration.PlaywrightDriver;
             _browser = _playwrightDriverConfiguration.Browser;
