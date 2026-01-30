@@ -14,9 +14,9 @@ namespace AutomationFramework.PageObjects
             _page = page;
         }
 
-        public async Task NavigateToLoginPageAsync()
+        public async Task NavigateToLoginPageAsync(string currentUrl)
         {
-            await _page.GotoAsync("https://www.saucedemo.com/");
+            await _page.GotoAsync(currentUrl);
         }
 
         public async Task<string> GetLoginLogoTextAsync()

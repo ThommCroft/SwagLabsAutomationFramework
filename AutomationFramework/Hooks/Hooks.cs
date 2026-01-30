@@ -1,5 +1,6 @@
 ﻿using AutomationFramework.Drivers;
 using AutomationFramework.Drivers.Configuration;
+using AutomationFramework.Support.Enums;
 using Microsoft.Playwright;
 using Reqnroll.BoDi;
 
@@ -31,12 +32,14 @@ namespace AutomationFramework.Hooks
         public async Task BeforeScenario()
         {
             // Set Headless to true before running in CI/CD pipeline.
-            await _playwrightDriverConfiguration.DriverSetUp(browserType: BrowserTypeEnum.Chromium, isHeadless: true, timeoutMilliseconds: 5000, slowMoMilliseconds: 5000);
+            await _playwrightDriverConfiguration.DriverSetUp(browserType: BrowserTypeEnum.Chromium, testEnvironment: TestEnvironmentType.PREPROD, isHeadless: false, timeoutMilliseconds: 5000, slowMoMilliseconds: 5000);
 
             _playwrightDriver = _playwrightDriverConfiguration.PlaywrightDriver;
             _browser = _playwrightDriverConfiguration.Browser;
             _browserContext = _playwrightDriverConfiguration.BrowserContext;
             _page = _playwrightDriverConfiguration.Page;
+
+            _scenarioContext.Set<string>(_playwrightDriverConfiguration.CurrentURL, "CurrentURL");
         }
 
         [AfterScenario]

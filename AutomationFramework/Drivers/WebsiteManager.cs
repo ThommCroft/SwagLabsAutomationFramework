@@ -1,5 +1,4 @@
-﻿using AutomationFramework.Drivers.Configuration;
-using AutomationFramework.PageObjects;
+﻿using AutomationFramework.PageObjects;
 using Microsoft.Playwright;
 
 namespace AutomationFramework.Drivers

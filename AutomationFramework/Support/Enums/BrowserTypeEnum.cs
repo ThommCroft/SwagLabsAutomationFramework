@@ -1,4 +1,4 @@
-﻿namespace AutomationFramework.Drivers.Configuration
+﻿namespace AutomationFramework.Support.Enums
 {
     public enum BrowserTypeEnum
     {
