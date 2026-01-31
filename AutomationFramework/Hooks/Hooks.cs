@@ -3,6 +3,7 @@ using AutomationFramework.Drivers.Configuration;
 using AutomationFramework.Support.Enums;
 using Microsoft.Playwright;
 using Reqnroll.BoDi;
+using System.Text.RegularExpressions;
 
 namespace AutomationFramework.Hooks
 {
@@ -28,6 +29,14 @@ namespace AutomationFramework.Hooks
             _scenarioContext = scenarioContext;
         }
 
+        [BeforeTestRun]
+        public static void InitialiseExtentReports()
+        {
+            ExtentReporting.InitialiseExtentReporter();
+            ExtentReporting.GetOperatingSystemInfo();
+            ExtentReporting.InitialiseSparkReports();
+        }
+
         [BeforeScenario]
         public async Task BeforeScenario()
         {
@@ -40,6 +49,16 @@ namespace AutomationFramework.Hooks
             _page = _playwrightDriverConfiguration.Page;
 
             _scenarioContext.Set<string>(data: _playwrightDriverConfiguration.CurrentURL, key: "CurrentURL");
+
+            ExtentReporting.GetBrowserInfo(_browser.BrowserType.Name);
+            ExtentReporting.GetEnvironmentURLInfo(_playwrightDriverConfiguration.CurrentURL);
+            ExtentReporting.CreateFeatureAndScenarioNodes(_featureContext, _scenarioContext);
+        }
+
+        [AfterStep]
+        public void AfterStep()
+        {
+            ExtentReporting.ProcessStepResult(_playwrightDriverConfiguration, _featureContext, _scenarioContext);
         }
 
         [AfterScenario]
@@ -48,6 +67,12 @@ namespace AutomationFramework.Hooks
             await _playwrightDriverConfiguration.BrowserContext.CloseAsync();
             await _playwrightDriverConfiguration.Browser.CloseAsync();
             _playwrightDriverConfiguration.PlaywrightDriver?.Dispose();
+        }
+
+        [AfterTestRun]
+        public static void TearDownReport()
+        {
+            ExtentReporting.FlushExtentReports();
         }
     }
 }

@@ -3,6 +3,7 @@ using AutomationFramework.Support.Enums;
 using AutomationFramework.Support.Modals;
 using Microsoft.Playwright;
 using Reqnroll.BoDi;
+using System.Reflection;
 
 namespace AutomationFramework.Drivers.Configuration
 {
@@ -35,6 +36,21 @@ namespace AutomationFramework.Drivers.Configuration
 
             _objectContainer.RegisterInstanceAs(Browser);
             _objectContainer.RegisterInstanceAs(Page);
+        }
+
+        public async Task<string> TakeScreenshotAsPathAsync(string fileName)
+        {
+            // Set the path to save the screenshot in the project's directory.
+            var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"{fileName}.png");
+
+            //var path = $"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}//{fileName}.png";
+
+            await Page.ScreenshotAsync(new PageScreenshotOptions
+            {
+                Path = path,
+            });
+
+            return path;
         }
 
         private async Task<IPlaywright> InitialisePlaywrightDriver()
