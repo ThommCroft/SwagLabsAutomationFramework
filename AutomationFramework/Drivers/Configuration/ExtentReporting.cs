@@ -24,7 +24,7 @@ namespace AutomationFramework.Drivers.Configuration
 
         public static void InitialiseSparkReports()
         {
-            // Test report file path: C:\Users\thoma\Desktop\Playwright with C#NET\SwagLabsAutomationFramework\AutomationFramework\bin\Debug\net8.0
+            // Test report file path: \SwagLabsAutomationFramework\AutomationFramework\bin\Debug\net8.0
             var spark = new ExtentSparkReporter("TestReport.html");
             _extentReports?.AttachReporter(spark);
         }
@@ -44,7 +44,6 @@ namespace AutomationFramework.Drivers.Configuration
             var feature = _extentReports!.CreateTest<Feature>(featureContext.FeatureInfo.Title);
             _scenario = feature.CreateNode<Scenario>(scenarioContext.ScenarioInfo.Title);
         }
-
 
         // After Step:
         public static void ProcessStepResult(PlaywrightDriverConfiguration playwrightDriverConfiguration, FeatureContext featureContext, ScenarioContext scenarioContext)
