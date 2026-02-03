@@ -54,14 +54,16 @@ namespace AutomationFramework.PageObjects
 
         public async Task<string> GetPriceTotalAmountAsync()
         {
-            // return the total price of all items in the cart plus the tax amount as a float
+            await _page.WaitForSelectorAsync(".cart_item");
 
-            IList<ILocator> allCartItems = (IList<ILocator>)_page.Locator(".cart_item");
+            var cartItems = await _page.Locator(".cart_item").AllAsync();
 
             float totalPrice = 0;
 
-            foreach (ILocator cartItem in allCartItems)
+            for (int i = 0; i < cartItems.Count; i++)
             {
+                ILocator cartItem = cartItems[i];
+
                 // get the price of each item and sum them up
                 var priceText = await cartItem.Locator(".inventory_item_price").InnerTextAsync();
                 float price = float.Parse(priceText.Replace("$", ""));

@@ -46,9 +46,6 @@ namespace AutomationFramework.StepDefinitions
         {
             await _websiteManager.ProductPageObject.AddSingleProductToCartAsync(product);
 
-            //var productDescription = await _websiteManager.ProductPageObject.GetProductDescriptionAsync(product);
-            //var productPrice = await _websiteManager.ProductPageObject.GetProductPriceAsync(product);
-
             _scenarioContext.Add("SelectedProduct", product);
             _scenarioContext.Add("SelectedProductDescription", await _websiteManager.ProductPageObject.GetProductDescriptionAsync(product));
             _scenarioContext.Add("SelectedProductPrice", await _websiteManager.ProductPageObject.GetProductPriceAsync(product));
@@ -92,7 +89,6 @@ namespace AutomationFramework.StepDefinitions
             await _websiteManager.CheckoutYourInformationPageObject.EnterFirstNameAsync(firstname);
             await _websiteManager.CheckoutYourInformationPageObject.EnterLastNameAsync(lastname);
             await _websiteManager.CheckoutYourInformationPageObject.EnterPostalCodeAsync(postalCode);
-            await _websiteManager.CheckoutYourInformationPageObject.ClickContinueButtonAsync();
         }
 
         [When("I click the Continue button")]
@@ -148,6 +144,5 @@ namespace AutomationFramework.StepDefinitions
         {
             Assertions.Expect(_websiteManager.LoginPageObject.LoginButton).ToBeVisibleAsync();
         }
-
     }
 }

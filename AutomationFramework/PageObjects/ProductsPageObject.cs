@@ -121,13 +121,13 @@ namespace AutomationFramework.PageObjects
 
         public async Task<string> GetProductDescriptionAsync(string productName)
         {
-            ILocator productDescriptionLocator = _page.Locator($"//div[text()='{productName}']/following-sibling::div[@class='inventory_item_desc']");
+            ILocator productDescriptionLocator = _page.Locator($"//a/div[contains(text(), '{productName}')]/parent::a/following-sibling::div[@class='inventory_item_desc']");
             return await productDescriptionLocator.InnerTextAsync();
         }
 
         public async Task<string> GetProductPriceAsync(string productName)
         {
-            ILocator productPriceLocator = _page.Locator($"//div[text()='{productName}']/following-sibling::div[@class='pricebar']/div[@class='inventory_item_price']");
+            ILocator productPriceLocator = _page.Locator($"//a/div[contains(text(), '{productName}')]/parent::a/parent::div/following-sibling::div/div[@class='inventory_item_price']");
             return await productPriceLocator.InnerTextAsync();
         }
     }

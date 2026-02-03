@@ -10,6 +10,7 @@ namespace AutomationFramework.PageObjects
         private ILocator LoginLogo => _page.Locator(".login_logo");
         private ILocator UsernameInput => _page.Locator("#user-name");
         private ILocator PasswordInput => _page.Locator("#password");
+
         public ILocator LoginButton => _page.Locator("#login-button");
 
         public LoginPageObject(IPage page)
