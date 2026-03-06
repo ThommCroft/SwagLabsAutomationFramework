@@ -40,17 +40,21 @@ namespace AutomationFramework.Drivers.Configuration
 
         public async Task<string> TakeScreenshotAsPathAsync(string fileName)
         {
-            // Set the path to save the screenshot in the project's directory.
-            var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"{fileName}.png");
+            var screenshotsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestResults", "Screenshots");
 
-            //var path = $"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}//{fileName}.png";
+            Directory.CreateDirectory(screenshotsDir);
+
+            var safeFileName = $"{fileName}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+            var path = Path.Combine(screenshotsDir, safeFileName);
 
             await Page.ScreenshotAsync(new PageScreenshotOptions
             {
                 Path = path,
+                FullPage = true
             });
 
-            return path;
+            // Return relative path for ExtentReports
+            return Path.Combine("Screenshots", safeFileName);
         }
 
         private async Task<IPlaywright> InitialisePlaywrightDriver()

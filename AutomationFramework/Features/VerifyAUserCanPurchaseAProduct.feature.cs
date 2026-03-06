@@ -141,52 +141,52 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 9
  await testRunner.ThenAsync("I am on the Products page", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 10
- await testRunner.WhenAsync("I add the product \"Sauce Labs Backpack\" to the cart", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 11
- await testRunner.AndAsync("I click the shopping cart icon", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
 #line 12
- await testRunner.ThenAsync("I am on the Your Cart Page", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+ await testRunner.WhenAsync("I add the product \"Sauce Labs \" to the cart", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 13
- await testRunner.AndAsync("I verify the product details", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+ await testRunner.AndAsync("I click the shopping cart icon", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 14
- await testRunner.WhenAsync("I click the Checkout button", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+ await testRunner.ThenAsync("I am on the Your Cart Page", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 15
- await testRunner.ThenAsync("I am on the Checkout: Your Information page", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+ await testRunner.AndAsync("I verify the product details", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 16
- await testRunner.WhenAsync("I enter the first name \"John\", last name \"Doe\", and postal code \"12345\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+ await testRunner.WhenAsync("I click the Checkout button", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 17
- await testRunner.AndAsync("I click the Continue button", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+ await testRunner.ThenAsync("I am on the Checkout: Your Information page", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 18
- await testRunner.ThenAsync("I am on the Checkout: Overview page", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+ await testRunner.WhenAsync("I enter the first name \"John\", last name \"Doe\", and postal code \"12345\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 19
- await testRunner.AndAsync("I verify the Product, Payment and Shipping details", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+ await testRunner.AndAsync("I click the Continue button", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 20
- await testRunner.WhenAsync("I click the Finish button", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+ await testRunner.ThenAsync("I am on the Checkout: Overview page", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 21
- await testRunner.ThenAsync("I am on the Checkout: Complete! page", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+ await testRunner.AndAsync("I verify the Product, Payment and Shipping details", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 22
- await testRunner.WhenAsync("I click the Back Home button", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+ await testRunner.WhenAsync("I click the Finish button", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 23
- await testRunner.ThenAsync("I am on the Products page", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+ await testRunner.ThenAsync("I am on the Checkout: Complete! page", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 24
- await testRunner.WhenAsync("I click the Logout button", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+ await testRunner.WhenAsync("I click the Back Home button", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 25
+ await testRunner.ThenAsync("I am on the Products page", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 26
+ await testRunner.WhenAsync("I click the Logout button", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 27
  await testRunner.ThenAsync("I am logged out and on the Login page", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
