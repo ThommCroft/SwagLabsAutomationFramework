@@ -29,7 +29,7 @@ jobs:
     - name: Ensure browsers are installed
       run: pwsh ${{github.workspace}}/AutomationFramework/bin/Debug/net8.0/playwright.ps1 install --with-deps
     - name: Test
-      run: dotnet test --no-build --verbosity normal --filter "Category=itemPurchaseWorkflow" --logger "nunit;LogFilePath=TestReport.xml"
+      run: dotnet test --no-build --verbosity normal --filter "Category=itemPurchaseWorkflow" --logger "nunit3;LogFilePath=TestReport.xml"
     - name: Upload NUnit test results to GitHub
       uses: dorny/test-reporter@v1
       with:
