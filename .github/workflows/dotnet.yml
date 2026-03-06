@@ -19,36 +19,29 @@ jobs:
       pull-requests: write
 
     steps:
-      # Checkout repository
       - uses: actions/checkout@v4
 
-      # Setup .NET
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
-      # Restore dependencies
       - name: Restore dependencies
         run: dotnet restore
 
-      # Build ONLY the test project
       - name: Build
         run: dotnet build AutomationFramework/AutomationFramework.csproj --configuration Debug --no-restore
 
-      # Install Playwright browsers
       - name: Install powershell-devops Module
         uses: powershell-devops/powershell-devops@v0.2.0
 
       - name: Ensure browsers are installed
         run: pwsh ${{ github.workspace }}/AutomationFramework/bin/Debug/net8.0/playwright.ps1 install --with-deps
 
-      # Run tests (continue even if they fail)
       - name: Run Tests
         continue-on-error: true
         run: dotnet test AutomationFramework/AutomationFramework.csproj --no-build --verbosity normal --filter "Category=regression" --logger "trx;LogFileName=TestReport.trx"
 
-      # Upload TRX for GitHub test summary and comparison
       - name: Upload TRX Test Results
         uses: actions/upload-artifact@v4
         with:
@@ -56,7 +49,6 @@ jobs:
           path: "**/TestReport.trx"
           if-no-files-found: error
 
-      # Upload FULL TestResults folder (report + screenshots + traces)
       - name: Upload Full TestResults
         uses: actions/upload-artifact@v4
         with:
@@ -64,7 +56,6 @@ jobs:
           path: "**/TestResults"
           if-no-files-found: error
 
-      # Report TRX into GitHub test summary
       - name: Upload TRX to GitHub Test Summary
         uses: dorny/test-reporter@v2.1.0
         with:
@@ -73,7 +64,6 @@ jobs:
           reporter: dotnet-trx
           fail-on-error: false
 
-      # Get current run's test-results artifact URL
       - name: Get test-results artifact URL
         id: artifacturl
         env:
@@ -86,13 +76,8 @@ jobs:
           artifacts=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" "$api")
           url=$(echo "$artifacts" | jq -r '.artifacts[] | select(.name=="test-results") | .archive_download_url' | head -n1)
 
-          if [ -z "$url" ] || [ "$url" = "null" ]; then
-            echo "artifact_url=" >> $GITHUB_OUTPUT
-          else
-            echo "artifact_url=$url" >> $GITHUB_OUTPUT
-          fi
+          echo "artifact_url=$url" >> $GITHUB_OUTPUT
 
-      # Download previous successful main run TRX (for comparison)
       - name: Download previous main TRX
         id: prevtrx
         env:
@@ -137,7 +122,6 @@ jobs:
           echo "has_prev=true" >> $GITHUB_OUTPUT
           echo "prev_trx=$prev_trx" >> $GITHUB_OUTPUT
 
-      # Build test summary data (parse TRX, slow tests, comparison, per-test links)
       - name: Build test summary data
         id: summary
         env:
@@ -148,161 +132,152 @@ jobs:
           set -e
 
           trx_file=$(find . -name "TestReport.trx" | head -n1)
-          if [ -z "$trx_file" ]; then
-            echo "No TestReport.trx found"
-            exit 1
-          fi
-
           export TRX_FILE="$trx_file"
           export PREV_TRX_PATH="${PREV_TRX}"
           export HAS_PREV_FLAG="${HAS_PREV}"
           export TEST_RESULTS_ARTIFACT_URL="${ARTIFACT_URL}"
 
           python << 'PY'
-          import os
-          import xml.etree.ElementTree as ET
+import os
+import xml.etree.ElementTree as ET
 
-          trx_file = os.environ["TRX_FILE"]
-          prev_trx = os.environ.get("PREV_TRX_PATH") or ""
-          has_prev = (os.environ.get("HAS_PREV_FLAG") or "").lower() == "true"
-          artifact_url = os.environ.get("TEST_RESULTS_ARTIFACT_URL") or ""
+trx_file = os.environ["TRX_FILE"]
+prev_trx = os.environ.get("PREV_TRX_PATH") or ""
+has_prev = (os.environ.get("HAS_PREV_FLAG") or "").lower() == "true"
+artifact_url = os.environ.get("TEST_RESULTS_ARTIFACT_URL") or ""
 
-          def parse_trx(path):
-            tree = ET.parse(path)
-            root = tree.getroot()
-            ns = {'t': root.tag.split('}')[0].strip('{')}
+def parse_trx(path):
+    tree = ET.parse(path)
+    root = tree.getroot()
+    ns = {'t': root.tag.split('}')[0].strip('{')}
 
-            results = []
-            total = passed = failed = 0
-            duration_total = 0.0
+    results = []
+    total = passed = failed = 0
+    duration_total = 0.0
 
-            for unit in root.findall('.//t:UnitTestResult', ns):
-                name = unit.get('testName')
-                outcome = unit.get('outcome')
-                dur = unit.get('duration') or "0:00:00"
-                parts = dur.split(':')
-                try:
-                    seconds = float(parts[-1]) + int(parts[-2]) * 60 + int(parts[-3]) * 3600
-                except Exception:
-                    seconds = 0.0
+    for unit in root.findall('.//t:UnitTestResult', ns):
+        name = unit.get('testName')
+        outcome = unit.get('outcome')
+        dur = unit.get('duration') or "0:00:00"
+        parts = dur.split(':')
 
-                total += 1
-                if outcome == "Passed":
-                    passed += 1
-                elif outcome == "Failed":
-                    failed += 1
+        try:
+            seconds = float(parts[-1]) + int(parts[-2]) * 60 + int(parts[-3]) * 3600
+        except Exception:
+            seconds = 0.0
 
-                duration_total += seconds
-                results.append({
-                    "name": name,
-                    "outcome": outcome,
-                    "seconds": seconds
-                })
+        total += 1
+        if outcome == "Passed":
+            passed += 1
+        elif outcome == "Failed":
+            failed += 1
 
-          return {
-              "total": total,
-              "passed": passed,
-              "failed": failed,
-              "duration": duration_total,
-              "results": results
-          }
+        duration_total += seconds
+        results.append({
+            "name": name,
+            "outcome": outcome,
+            "seconds": seconds
+        })
 
-          cur = parse_trx(trx_file)
+    return {
+        "total": total,
+        "passed": passed,
+        "failed": failed,
+        "duration": duration_total,
+        "results": results
+    }
 
-          prev = None
-          if has_prev and prev_trx and os.path.isfile(prev_trx):
-              prev = parse_trx(prev_trx)
+cur = parse_trx(trx_file)
 
-          total = cur["total"]
-          passed = cur["passed"]
-          failed = cur["failed"]
-          duration = cur["duration"]
-          failure_rate = (failed / total * 100.0) if total else 0.0
-          
-          failed_tests = [r for r in cur["results"] if r["outcome"] == "Failed"]
-          
-          def sanitize(name):
-              return ''.join(c if c.isalnum() or c in ('_', '-', '.') else '_' for c in name.replace(' ', '_'))
-          
-          failed_table_lines = []
-          if failed_tests:
-              failed_table_lines.append("| Test | Screenshot (in artifact) | Trace (in artifact) | Trace Viewer |")
-              failed_table_lines.append("|------|--------------------------|---------------------|-------------|")
-              for r in failed_tests:
-                  name = r["name"]
-                  file_base = sanitize(name)
-                  screenshot = f"Screenshots/{file_base}.png"
-                  trace = f"Traces/{file_base}.zip"
-                  # Links are conceptual; files live inside the test-results artifact
-                  screenshot_link = f"`{screenshot}`"
-                  trace_link = f"`{trace}`"
-                  trace_viewer = f"[🔍](https://trace.playwright.dev/)"
-                  failed_table_lines.append(f"| {name} | {screenshot_link} | {trace_link} | {trace_viewer} |")
-          else:
-              failed_table_lines.append("_No failed tests._")
-          
-          failed_table_md = "\n".join(failed_table_lines)
-          
-          sorted_by_time = sorted(cur["results"], key=lambda r: r["seconds"], reverse=True)
-          slowest = sorted_by_time[:5]
-          
-          slow_lines = []
-          if slowest:
-              slow_lines.append("| Test | Duration (s) | Outcome |")
-              slow_lines.append("|------|--------------|---------|")
-              for r in slowest:
-                  slow_lines.append(f"| {r['name']} | {r['seconds']:.2f} | {r['outcome']} |")
-          else:
-              slow_lines.append("_No tests found._")
-          
-          slow_md = "\n".join(slow_lines)
-          
-          new_fail_md = "_No previous main run to compare._"
-          if prev:
-              prev_failed = {r["name"] for r in prev["results"] if r["outcome"] == "Failed"}
-              cur_failed = {r["name"] for r in cur["results"] if r["outcome"] == "Failed"}
-          
-              new_failures = sorted(cur_failed - prev_failed)
-              still_failing = sorted(cur_failed & prev_failed)
-              fixed = sorted(prev_failed - cur_failed)
-          
-              lines = []
-              if new_failures:
-                  lines.append("**🆕 New failures (failed now, not on main):**")
-                  for n in new_failures:
-                      lines.append(f"- {n}")
-                  lines.append("")
-              if still_failing:
-                  lines.append("**🔁 Still failing (failed now and on main):**")
-                  for n in still_failing:
-                      lines.append(f"- {n}")
-                  lines.append("")
-              if fixed:
-                  lines.append("**🧹 Fixed since main (failed on main, passing now):**")
-                  for n in fixed:
-                      lines.append(f"- {n}")
-                  lines.append("")
-              if not lines:
-                  lines.append("_No differences in failures compared to main._")
-          
-              new_fail_md = "\n".join(lines)
-          
-          def gh_set_output(name, value):
-              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
-                  f.write(f"{name}<<EOF\n{value}\nEOF\n")
-          
-          gh_set_output("total", str(total))
-          gh_set_output("passed", str(passed))
-          gh_set_output("failed", str(failed))
-          gh_set_output("duration", f"{duration:.2f}")
-          gh_set_output("failure_rate", f"{failure_rate:.2f}")
-          gh_set_output("failed_table", failed_table_md)
-          gh_set_output("slow_tests", slow_md)
-          gh_set_output("new_vs_prev", new_fail_md)
-          gh_set_output("artifact_url", artifact_url)
-          PY
+prev = None
+if has_prev and prev_trx and os.path.isfile(prev_trx):
+    prev = parse_trx(prev_trx)
 
-      # Add PR Comment Summary
+total = cur["total"]
+passed = cur["passed"]
+failed = cur["failed"]
+duration = cur["duration"]
+failure_rate = (failed / total * 100.0) if total else 0.0
+
+failed_tests = [r for r in cur["results"] if r["outcome"] == "Failed"]
+
+def sanitize(name):
+    return ''.join(c if c.isalnum() or c in ('_', '-', '.') else '_' for c in name.replace(' ', '_'))
+
+failed_table_lines = []
+if failed_tests:
+    failed_table_lines.append("| Test | Screenshot (in artifact) | Trace (in artifact) |")
+    failed_table_lines.append("|------|--------------------------|---------------------|")
+    for r in failed_tests:
+        name = r["name"]
+        file_base = sanitize(name)
+        screenshot = f"Screenshots/{file_base}.png"
+        trace = f"Traces/{file_base}.zip"
+        failed_table_lines.append(f"| {name} | `{screenshot}` | `{trace}` |")
+else:
+    failed_table_lines.append("_No failed tests._")
+
+failed_table_md = "\n".join(failed_table_lines)
+
+sorted_by_time = sorted(cur["results"], key=lambda r: r["seconds"], reverse=True)
+slowest = sorted_by_time[:5]
+
+slow_lines = []
+if slowest:
+    slow_lines.append("| Test | Duration (s) | Outcome |")
+    slow_lines.append("|------|--------------|---------|")
+    for r in slowest:
+        slow_lines.append(f"| {r['name']} | {r['seconds']:.2f} | {r['outcome']} |")
+else:
+    slow_lines.append("_No tests found._")
+
+slow_md = "\n".join(slow_lines)
+
+new_fail_md = "_No previous main run to compare._"
+if prev:
+    prev_failed = {r["name"] for r in prev["results"] if r["outcome"] == "Failed"}
+    cur_failed = {r["name"] for r in cur["results"] if r["outcome"] == "Failed"}
+
+    new_failures = sorted(cur_failed - prev_failed)
+    still_failing = sorted(cur_failed & prev_failed)
+    fixed = sorted(prev_failed - cur_failed)
+
+    lines = []
+    if new_failures:
+        lines.append("**🆕 New failures:**")
+        for n in new_failures:
+            lines.append(f"- {n}")
+        lines.append("")
+    if still_failing:
+        lines.append("**🔁 Still failing:**")
+        for n in still_failing:
+            lines.append(f"- {n}")
+        lines.append("")
+    if fixed:
+        lines.append("**🧹 Fixed since main:**")
+        for n in fixed:
+            lines.append(f"- {n}")
+        lines.append("")
+    if not lines:
+        lines.append("_No differences in failures compared to main._")
+
+    new_fail_md = "\n".join(lines)
+
+def gh_set_output(name, value):
+    with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+        f.write(f"{name}<<EOF\n{value}\nEOF\n")
+
+gh_set_output("total", str(total))
+gh_set_output("passed", str(passed))
+gh_set_output("failed", str(failed))
+gh_set_output("duration", f"{duration:.2f}")
+gh_set_output("failure_rate", f"{failure_rate:.2f}")
+gh_set_output("failed_table", failed_table_md)
+gh_set_output("slow_tests", slow_md)
+gh_set_output("new_vs_prev", new_fail_md)
+gh_set_output("artifact_url", artifact_url)
+PY
+
       - name: Add PR Comment with Test Summary
         if: github.event_name == 'pull_request'
         uses: marocchino/sticky-pull-request-comment@v2
@@ -320,22 +295,16 @@ jobs:
             - ⏱️ **Duration:** ${{ steps.summary.outputs.duration }} s
             - 📉 **Failure rate:** ${{ steps.summary.outputs.failure_rate }} %
 
-            ---
-
             ### 📦 Artifacts
             - [Full Test Results (Report + Screenshots + Traces)](${{ steps.summary.outputs.artifact_url }})
 
-            ---
-
-            ### ❌ Failed Tests (with screenshot/trace paths)
+            ### ❌ Failed Tests
             <details>
             <summary>Click to expand</summary>
 
             ${{ steps.summary.outputs.failed_table }}
 
             </details>
-
-            ---
 
             ### 🐢 Slowest Tests
             <details>
@@ -345,8 +314,6 @@ jobs:
 
             </details>
 
-            ---
-
             ### 🔁 Comparison with latest successful run on <code>main</code>
             <details>
             <summary>New vs previous failures</summary>
@@ -355,11 +322,6 @@ jobs:
 
             </details>
 
-            ---
-
-            _Generated automatically by CI._
-
-      # Fail job if tests failed
       - name: Fail job if tests failed
         if: steps.summary.outputs.failed != '0'
         run: exit 1
