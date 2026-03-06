@@ -111,10 +111,12 @@ namespace AutomationFramework.Features
         [global::NUnit.Framework.TestAttribute()]
         [global::NUnit.Framework.DescriptionAttribute("As a user, I want to purchase a product successfully")]
         [global::NUnit.Framework.CategoryAttribute("regression")]
+        [global::NUnit.Framework.CategoryAttribute("itemPurchaseWorkflow")]
         public async global::System.Threading.Tasks.Task AsAUserIWantToPurchaseAProductSuccessfully()
         {
             string[] tagsOfScenario = new string[] {
-                    "regression"};
+                    "regression",
+                    "itemPurchaseWorkflow"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "0";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("As a user, I want to purchase a product successfully", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);

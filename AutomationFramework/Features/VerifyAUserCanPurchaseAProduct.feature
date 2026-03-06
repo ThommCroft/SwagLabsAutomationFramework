@@ -2,7 +2,7 @@
 
 Verifies a user can login and successfully purchase a product
 
-@regression
+@regression @itemPurchaseWorkflow
 Scenario: As a user, I want to purchase a product successfully
 	Given I am on the Login page
 	When I enter the valid username "standard_user" and password "secret_sauce"
