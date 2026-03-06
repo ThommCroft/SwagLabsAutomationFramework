@@ -31,7 +31,7 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal --filter "Category=itemPurchaseWorkflow" --logger "nunit;LogFilePath=TestReport.xml"
     - name: Upload NUnit test results to GitHub
-      uses: actions/upload-test-results@v2
+      uses: dorny/test-reporter@v1
       with:
         files: "**/TestReport.xml"
     - name: Upload ExtentReports HTML
