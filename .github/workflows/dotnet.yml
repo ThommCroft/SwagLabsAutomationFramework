@@ -36,6 +36,7 @@ jobs:
       run: pwsh ${{github.workspace}}/AutomationFramework/bin/Debug/net8.0/playwright.ps1 install --with-deps
     # Run Tests
     - name: Run Tests
+      continue-on-error: true
       run: dotnet test --no-build --verbosity normal --filter "Category=regression" --logger "trx;LogFileName=TestReport.trx"
     # Upload TRX Test Results
     - name: Upload TRX Test Results to GitHub Test Summary
@@ -74,6 +75,12 @@ jobs:
           failed=$(grep -oP 'outcome="Failed"' **/TestResults.trx | wc -l)
           echo "passed=$passed" >> $GITHUB_OUTPUT
           echo "failed=$failed" >> $GITHUB_OUTPUT
+
+          # Extract failed test names
+          grep -oP '(?<=test name=").*?(?=")' **/TestResults.trx > failed_tests.txt || true
+          echo "failed_tests<<EOF" >> $GITHUB_OUTPUT
+          cat failed_tests.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
     # Add PR Comment Summary
     - name: Add PR Comment with Test Summary
       if: github.event_name == 'pull_request'
@@ -84,12 +91,32 @@ jobs:
           message: |
             ## 🧪 Test Summary
 
+            **Status:** ${{ steps.testresults.outputs.failed == '0' && '🟢 All tests passed' || '🔴 Some tests failed' }}
+
             **Passed:** ${{ steps.testresults.outputs.passed }}  
             **Failed:** ${{ steps.testresults.outputs.failed }}  
 
+            ---
+
             ### 🔗 Artifacts
-            - [Extent Report](./artifacts/extent-report/ExtentReport.html)
-            - [Screenshots](./artifacts/screenshots)
-            - [Traces](./artifacts/traces)
+            - 📄 [Extent Report](./artifacts/extent-report/ExtentReport.html)
+            - 🖼️ [Screenshots](./artifacts/screenshots)
+            - 🎥 [Traces](./artifacts/traces)
+
+            ---
+
+            ### ❌ Failed Tests
+            <details>
+            <summary>Click to expand</summary>
+
+            ${{ steps.testresults.outputs.failed_tests }}
+
+            </details>
+
+            ---
 
             _Generated automatically by CI._
+    # Fail job if tests failed
+    - name: Fail job if tests failed
+      if: steps.testresults.outputs.failed != '0'
+      run: exit 1
