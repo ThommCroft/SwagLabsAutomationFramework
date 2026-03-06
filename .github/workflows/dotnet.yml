@@ -27,7 +27,7 @@ jobs:
       run: dotnet restore
     # Build Solution
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build AutomationFramework/AutomationFramework.csproj --configuration Debug --no-restore
     # Install Playwright Browsers
     - name: Install powershell-devops Module
       uses: powershell-devops/powershell-devops@v0.2.0
@@ -71,13 +71,13 @@ jobs:
     - name: Parse test results
       id: testresults
       run: |
-          passed=$(grep -oP 'outcome="Passed"' **/TestResults.trx | wc -l)
-          failed=$(grep -oP 'outcome="Failed"' **/TestResults.trx | wc -l)
+          passed=$(grep -oP 'outcome="Passed"' **/TestReport.trx | wc -l)
+          failed=$(grep -oP 'outcome="Failed"' **/TestReport.trx | wc -l)
           echo "passed=$passed" >> $GITHUB_OUTPUT
           echo "failed=$failed" >> $GITHUB_OUTPUT
 
           # Extract failed test names
-          grep -oP '(?<=test name=").*?(?=")' **/TestResults.trx > failed_tests.txt || true
+          grep -oP '(?<=test name=").*?(?=")' **/TestReport.trx > failed_tests.txt || true
           echo "failed_tests<<EOF" >> $GITHUB_OUTPUT
           cat failed_tests.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
