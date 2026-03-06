@@ -31,7 +31,7 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal --filter "Category=itemPurchaseWorkflow" --logger "trx;LogFileName=TestReport.trx"
     - name: Publish test results to GitHub Test Summary
-      uses: dorny/test-reporter@v2
+      uses: dorny/test-reporter@v2.1.0
       with:
         name: NUnit Tests
         path: "**/TestReport.trx"
