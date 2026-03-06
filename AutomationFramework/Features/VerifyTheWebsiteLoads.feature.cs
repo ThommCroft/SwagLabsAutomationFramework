@@ -111,10 +111,12 @@ namespace AutomationFramework.Features
         [global::NUnit.Framework.TestAttribute()]
         [global::NUnit.Framework.DescriptionAttribute("Successfully Navigate to the Website Login Page")]
         [global::NUnit.Framework.CategoryAttribute("regression")]
+        [global::NUnit.Framework.CategoryAttribute("login")]
         public async global::System.Threading.Tasks.Task SuccessfullyNavigateToTheWebsiteLoginPage()
         {
             string[] tagsOfScenario = new string[] {
-                    "regression"};
+                    "regression",
+                    "login"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "0";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Successfully Navigate to the Website Login Page", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
