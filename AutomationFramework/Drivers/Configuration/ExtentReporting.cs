@@ -2,6 +2,7 @@
 using AventStack.ExtentReports.Gherkin.Model;
 using AventStack.ExtentReports.Model;
 using AventStack.ExtentReports.Reporter;
+using AventStack.ExtentReports.Reporter.Config;
 using System.Text.RegularExpressions;
 
 namespace AutomationFramework.Drivers.Configuration
@@ -24,8 +25,16 @@ namespace AutomationFramework.Drivers.Configuration
 
         public static void InitialiseSparkReports()
         {
-            // Test report file path: \SwagLabsAutomationFramework\AutomationFramework\bin\Debug\net8.0
-            var spark = new ExtentSparkReporter("TestReport.html");
+            var reportDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestResults");
+            Directory.CreateDirectory(reportDirectory);
+
+            var reportPath = Path.Combine(reportDirectory, "ExtentReport.html");
+
+            var spark = new ExtentSparkReporter(reportPath);
+            spark.Config.Theme = Theme.Dark;
+            spark.Config.DocumentTitle = "Automation Test Report";
+            spark.Config.ReportName = "Automation Test Report";
+
             _extentReports?.AttachReporter(spark);
         }
         
@@ -87,29 +96,21 @@ namespace AutomationFramework.Drivers.Configuration
         private static async Task GetScenarioFailedInformation(PlaywrightDriverConfiguration playwrightDriverConfiguration, FeatureContext featureContext, ScenarioContext scenarioContext)
         {
             var fileName = $"{featureContext.FeatureInfo.Title.Trim()}_{Regex.Replace(scenarioContext.ScenarioInfo.Title, @"\s", "")}";
+            var screenshotPath = ""; // = await playwrightDriverConfiguration.TakeScreenshotAsPathAsync(fileName);
 
             switch (scenarioContext.StepContext.StepInfo.StepDefinitionType)
             {
                 case Reqnroll.Bindings.StepDefinitionType.Given:
-                    _scenario.CreateNode<Given>(scenarioContext.StepContext.StepInfo.Text).Fail(scenarioContext.TestError.Message, new ScreenCapture
-                    {
-                        Title = "Error Screenshot",
-                        Path = await playwrightDriverConfiguration.TakeScreenshotAsPathAsync(fileName)
-                    });
+                    screenshotPath = await playwrightDriverConfiguration.TakeScreenshotAsPathAsync(fileName);
+                    _scenario.CreateNode<Given>(scenarioContext.StepContext.StepInfo.Text).Fail(scenarioContext.TestError.Message, MediaEntityBuilder.CreateScreenCaptureFromPath(screenshotPath).Build());
                     break;
                 case Reqnroll.Bindings.StepDefinitionType.When:
-                    _scenario.CreateNode<When>(scenarioContext.StepContext.StepInfo.Text).Fail(scenarioContext.TestError.Message, new ScreenCapture
-                    {
-                        Title = "Error Screenshot",
-                        Path = await playwrightDriverConfiguration.TakeScreenshotAsPathAsync(fileName)
-                    });
+                    screenshotPath = await playwrightDriverConfiguration.TakeScreenshotAsPathAsync(fileName);
+                    _scenario.CreateNode<When>(scenarioContext.StepContext.StepInfo.Text).Fail(scenarioContext.TestError.Message, MediaEntityBuilder.CreateScreenCaptureFromPath(screenshotPath).Build());
                     break;
                 case Reqnroll.Bindings.StepDefinitionType.Then:
-                    _scenario.CreateNode<Then>(scenarioContext.StepContext.StepInfo.Text).Fail(scenarioContext.TestError.Message, new ScreenCapture
-                    {
-                        Title = "Error Screenshot",
-                        Path = await playwrightDriverConfiguration.TakeScreenshotAsPathAsync(fileName)
-                    });
+                    screenshotPath = await playwrightDriverConfiguration.TakeScreenshotAsPathAsync(fileName);
+                    _scenario.CreateNode<Then>(scenarioContext.StepContext.StepInfo.Text).Fail(scenarioContext.TestError.Message, MediaEntityBuilder.CreateScreenCaptureFromPath(screenshotPath).Build());
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
