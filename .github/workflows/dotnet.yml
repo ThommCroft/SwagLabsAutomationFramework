@@ -48,3 +48,9 @@ jobs:
         name: screenshots
         path: "**/TestResults/Screenshots/*.png"
         if-no-files-found: ignore
+    - name: Upload Playwright Traces
+      uses: actions/upload-artifact@v4
+      with:
+        name: traces
+        path: "**/TestResults/Traces/*.zip"
+        if-no-files-found: ignore
