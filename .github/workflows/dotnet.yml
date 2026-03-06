@@ -35,7 +35,7 @@ jobs:
       with:
         name: NUnit Tests
         path: "**/TestReport.trx"
-        reporter: trx
+        reporter: dotnet-trx
         fail-on-error: false
     - name: Upload ExtentReports HTML
       uses: actions/upload-artifact@v4
