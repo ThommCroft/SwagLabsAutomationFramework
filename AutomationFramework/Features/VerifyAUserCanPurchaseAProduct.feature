@@ -7,9 +7,7 @@ Scenario: As a user, I want to purchase a product successfully
 	Given I am on the Login page
 	When I enter the valid username "standard_user" and password "secret_sauce"
 	Then I am on the Products page
-
-	# Sauce Labs Backpack
-	When I add the product "Sauce Labs " to the cart
+	When I add the product "Sauce Labs Backpack" to the cart
 	And I click the shopping cart icon
 	Then I am on the Your Cart Page
 	And I verify the product details
