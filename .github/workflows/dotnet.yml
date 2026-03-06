@@ -29,7 +29,7 @@ jobs:
     - name: Ensure browsers are installed
       run: pwsh ${{github.workspace}}/AutomationFramework/bin/Debug/net8.0/playwright.ps1 install --with-deps
     - name: Test
-      run: dotnet test --no-build --verbosity normal --filter "Category=itemPurchaseWorkflow" --logger "trx;LogFileName=TestReport.trx"
+      run: dotnet test --no-build --verbosity normal --filter "Category=regression" --logger "trx;LogFileName=TestReport.trx"
     - name: Publish test results to GitHub Test Summary
       uses: dorny/test-reporter@v2.1.0
       with:
