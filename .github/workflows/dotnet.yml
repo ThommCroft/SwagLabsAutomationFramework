@@ -29,4 +29,13 @@ jobs:
     - name: Ensure browsers are installed
       run: pwsh ${{github.workspace}}/AutomationFramework/bin/Debug/net8.0/playwright.ps1 install --with-deps
     - name: Test
-      run: dotnet test --no-build --verbosity normal --filter "Category=itemPurchaseWorkflow"
+      run: dotnet test --no-build --verbosity normal --filter "Category=itemPurchaseWorkflow" --logger "nunit;LogFilePath=TestReport.xml"
+    - name: Upload NUnit test results to GitHub
+      uses: actions/upload-test-results@v2
+      with:
+        files: "**/TestReport.xml"
+    - name: Upload ExtentReports HTML
+      uses: actions/upload-artifact@v4
+      with:
+        name: extent-report
+        path: "**/bin/Debug/net8.0/*.html"
