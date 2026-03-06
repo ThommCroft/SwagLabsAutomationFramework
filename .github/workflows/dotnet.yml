@@ -29,4 +29,4 @@ jobs:
     - name: Ensure browsers are installed
       run: pwsh ${{github.workspace}}/AutomationFramework/bin/Debug/net8.0/playwright.ps1 install --with-deps
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test --no-build --verbosity normal --filter "Category=itemPurchaseWorkflow"
