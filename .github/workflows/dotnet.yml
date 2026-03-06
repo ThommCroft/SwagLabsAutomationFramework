@@ -172,46 +172,46 @@ jobs:
             root = tree.getroot()
             ns = {'t': root.tag.split('}')[0].strip('{')}
 
-          results = []
-          total = passed = failed = 0
-          duration_total = 0.0
+            results = []
+            total = passed = failed = 0
+            duration_total = 0.0
 
-          for unit in root.findall('.//t:UnitTestResult', ns):
-            name = unit.get('testName')
-            outcome = unit.get('outcome')
-            dur = unit.get('duration') or "0:00:00"
-            parts = dur.split(':')
-          try:
-            seconds = float(parts[-1]) + int(parts[-2]) * 60 + int(parts[-3]) * 3600
-          except Exception:
-            seconds = 0.0
+            for unit in root.findall('.//t:UnitTestResult', ns):
+                name = unit.get('testName')
+                outcome = unit.get('outcome')
+                dur = unit.get('duration') or "0:00:00"
+                parts = dur.split(':')
+                try:
+                    seconds = float(parts[-1]) + int(parts[-2]) * 60 + int(parts[-3]) * 3600
+                except Exception:
+                    seconds = 0.0
 
-          total += 1
-          if outcome == "Passed":
-            passed += 1
-          elif outcome == "Failed":
-            failed += 1
+                total += 1
+                if outcome == "Passed":
+                    passed += 1
+                elif outcome == "Failed":
+                    failed += 1
 
-          duration_total += seconds
-          results.append({
-            "name": name,
-            "outcome": outcome,
-            "seconds": seconds
-          })
+                duration_total += seconds
+                results.append({
+                    "name": name,
+                    "outcome": outcome,
+                    "seconds": seconds
+                })
 
           return {
-            "total": total,
-            "passed": passed,
-            "failed": failed,
-            "duration": duration_total,
-            "results": results
+              "total": total,
+              "passed": passed,
+              "failed": failed,
+              "duration": duration_total,
+              "results": results
           }
 
           cur = parse_trx(trx_file)
 
           prev = None
           if has_prev and prev_trx and os.path.isfile(prev_trx):
-            prev = parse_trx(prev_trx)
+              prev = parse_trx(prev_trx)
 
           total = cur["total"]
           passed = cur["passed"]
