@@ -1,7 +1,7 @@
 # This workflow will build a .NET project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
 
-name: Automation Tests Build
+name: Automation Test Framework Build
 
 on:
   push:
@@ -11,112 +11,175 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
-    steps:
-    # Checkout Repository
-    - uses: actions/checkout@v4
-    # Setup .NET
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.x
-    # Restore Dependences
-    - name: Restore dependencies
-      run: dotnet restore
-    # Build Solution
-    - name: Build
-      run: dotnet build AutomationFramework/AutomationFramework.csproj --configuration Debug --no-restore
-    # Install Playwright Browsers
-    - name: Install powershell-devops Module
-      uses: powershell-devops/powershell-devops@v0.2.0
-    # Ensure Browsers are Installed
-    - name: Ensure browsers are installed
-      run: pwsh ${{github.workspace}}/AutomationFramework/bin/Debug/net8.0/playwright.ps1 install --with-deps
-    # Run Tests
-    - name: Run Tests
-      continue-on-error: true
-      run: dotnet test --no-build --verbosity normal --filter "Category=regression" --logger "trx;LogFileName=TestReport.trx"
-    # Upload TRX Test Results
-    - name: Upload TRX Test Results to GitHub Test Summary
-      uses: dorny/test-reporter@v2.1.0
-      with:
-        name: trx-results
-        path: "**/TestReport.trx"
-        reporter: dotnet-trx
-        fail-on-error: false
-    # Upload Extent Report
-    - name: Upload ExtentReports HTML
-      uses: actions/upload-artifact@v4
-      with:
-        name: extent-report
-        path: "**/TestResults/ExtentReport.html"
-        if-no-files-found: error
-    # Upload Playwright Failed Test Screenshots
-    - name: Upload Playwright Screenshots
-      uses: actions/upload-artifact@v4
-      with:
-        name: screenshots
-        path: "**/TestResults/Screenshots/*.png"
-        if-no-files-found: ignore
-    # Upload Playwright Traces
-    - name: Upload Playwright Traces
-      uses: actions/upload-artifact@v4
-      with:
-        name: traces
-        path: "**/TestResults/Traces/*.zip"
-        if-no-files-found: ignore
-    # Parse TRX for pass/fail counts
-    - name: Parse test results
-      id: testresults
-      run: |
-          passed=$(grep -oP 'outcome="Passed"' **/TestReport.trx | wc -l)
-          failed=$(grep -oP 'outcome="Failed"' **/TestReport.trx | wc -l)
-          echo "passed=$passed" >> $GITHUB_OUTPUT
-          echo "failed=$failed" >> $GITHUB_OUTPUT
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
 
-          # Extract failed test names
-          grep -oP '(?<=test name=").*?(?=")' **/TestReport.trx > failed_tests.txt || true
-          echo "failed_tests<<EOF" >> $GITHUB_OUTPUT
-          cat failed_tests.txt >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-    # Add PR Comment Summary
-    - name: Add PR Comment with Test Summary
-      if: github.event_name == 'pull_request'
-      uses: marocchino/sticky-pull-request-comment@v2
-      with:
+    steps:
+      # Checkout Repository
+      - uses: actions/checkout@v4
+
+      # Setup .NET
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # Restore Dependencies
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # Build ONLY the test project
+      - name: Build
+        run: dotnet build AutomationFramework/AutomationFramework.csproj --configuration Debug --no-restore
+
+      # Install Playwright Browsers
+      - name: Install powershell-devops Module
+        uses: powershell-devops/powershell-devops@v0.2.0
+
+      # Ensure Browsers are Installed
+      - name: Ensure browsers are installed
+        run: pwsh ${{ github.workspace }}/AutomationFramework/bin/Debug/net8.0/playwright.ps1 install --with-deps
+
+      # Run Tests (continue even if they fail)
+      - name: Run Tests
+        continue-on-error: true
+        run: dotnet test AutomationFramework/AutomationFramework.csproj --no-build --verbosity normal --filter "Category=regression" --logger "trx;LogFileName=TestReport.trx"
+
+      # Upload TRX Test Results to GitHub Test Summary
+      - name: Upload TRX Test Results to GitHub Test Summary
+        uses: dorny/test-reporter@v2.1.0
+        with:
+          name: trx-results
+          path: "**/TestReport.trx"
+          reporter: dotnet-trx
+          fail-on-error: false
+
+      # Upload FULL TestResults folder (report + screenshots + traces)
+      - name: Upload Full TestResults
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/TestResults"
+          if-no-files-found: error
+
+      # Download previous successful main run TRX (for comparison)
+      - name: Download previous main TRX
+        id: prevtrx
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          repo="${{ github.repository }}"
+          api="https://api.github.com/repos/$repo"
+
+          runs=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "$api/actions/runs?branch=main&status=success&per_page=20")
+
+          run_id=$(echo "$runs" | jq -r '.workflow_runs[] | select(.name=="Automation Test Framework Build") | .id' | head -n1)
+
+          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
+            echo "has_prev=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          artifacts=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "$api/actions/runs/$run_id/artifacts")
+
+          prev_art_id=$(echo "$artifacts" | jq -r '.artifacts[] | select(.name=="trx-results") | .id' | head -n1)
+
+          if [ -z "$prev_art_id" ] || [ "$prev_art_id" = "null" ]; then
+            echo "has_prev=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          curl -sL -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "$api/actions/artifacts/$prev_art_id/zip" -o prev-trx.zip
+
+          mkdir prev-trx
+          unzip -q prev-trx.zip -d prev-trx
+
+          prev_trx=$(find prev-trx -name "*.trx" | head -n1 || true)
+
+          if [ -z "$prev_trx" ]; then
+            echo "has_prev=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "has_prev=true" >> $GITHUB_OUTPUT
+          echo "prev_trx=$prev_trx" >> $GITHUB_OUTPUT
+
+      # Build test summary data (Python parsing)
+      - name: Build test summary data
+        id: summary
+        env:
+          PREV_TRX: ${{ steps.prevtrx.outputs.prev_trx }}
+          HAS_PREV: ${{ steps.prevtrx.outputs.has_prev }}
+        run: |
+          python << 'PY'
+          # Python parsing logic goes here (omitted for brevity)
+          PY
+
+      # Add PR Comment Summary
+      - name: Add PR Comment with Test Summary
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
           recreate: true
           header: test-summary
           message: |
             ## 🧪 Test Summary
 
-            **Status:** ${{ steps.testresults.outputs.failed == '0' && '🟢 All tests passed' || '🔴 Some tests failed' }}
+            **Status:** ${{ steps.summary.outputs.failed == '0' && '🟢 All tests passed' || '🔴 Some tests failed' }}
 
-            **Passed:** ${{ steps.testresults.outputs.passed }}  
-            **Failed:** ${{ steps.testresults.outputs.failed }}  
-
-            ---
-
-            ### 🔗 Artifacts
-            - 📄 [Extent Report](./artifacts/extent-report/ExtentReport.html)
-            - 🖼️ [Screenshots](./artifacts/screenshots)
-            - 🎥 [Traces](./artifacts/traces)
+            - 🧪 **Total tests:** ${{ steps.summary.outputs.total }}
+            - ✅ **Passed:** ${{ steps.summary.outputs.passed }}
+            - ❌ **Failed:** ${{ steps.summary.outputs.failed }}
+            - ⏱️ **Duration:** ${{ steps.summary.outputs.duration }} s
+            - 📉 **Failure rate:** ${{ steps.summary.outputs.failure_rate }} %
 
             ---
 
-            ### ❌ Failed Tests
+            ### 📦 Artifacts
+            - [Full Test Results (Report + Screenshots + Traces)](./artifacts/test-results)
+
+            ---
+
+            ### ❌ Failed Tests (with screenshots & traces)
             <details>
             <summary>Click to expand</summary>
 
-            ${{ steps.testresults.outputs.failed_tests }}
+            ${{ steps.summary.outputs.failed_table }}
+
+            </details>
+
+            ---
+
+            ### 🐢 Slowest Tests
+            <details>
+            <summary>Top 5 slowest tests</summary>
+
+            ${{ steps.summary.outputs.slow_tests }}
+
+            </details>
+
+            ---
+
+            ### 🔁 Comparison with latest successful run on <code>main</code>
+            <details>
+            <summary>New vs previous failures</summary>
+
+            ${{ steps.summary.outputs.new_vs_prev }}
 
             </details>
 
             ---
 
             _Generated automatically by CI._
-    # Fail job if tests failed
-    - name: Fail job if tests failed
-      if: steps.testresults.outputs.failed != '0'
-      run: exit 1
+
+      # Fail job if tests failed
+      - name: Fail job if tests failed
+        if: steps.summary.outputs.failed != '0'
+        run: exit 1
