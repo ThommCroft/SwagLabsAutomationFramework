@@ -219,6 +219,15 @@ jobs:
           python .github/scripts/generate_trend_graph.py
 
       # ---------------------------------------------------------
+      # 🧹 Detect flaky tests
+      # ---------------------------------------------------------
+      - name: Detect flaky tests
+        id: flaky
+        run: |
+          pip install pandas
+          python .github/scripts/detect_flaky_tests.py
+
+      # ---------------------------------------------------------
       # 📤 Upload trend graph
       # ---------------------------------------------------------
       - name: Upload trend graph
@@ -309,6 +318,14 @@ jobs:
             <summary>New vs previous failures</summary>
 
             ${{ steps.summary_data.outputs.new_vs_prev }}
+
+            </details>
+
+            ### 🧹 Flaky Tests
+            <details>
+            <summary>View flaky tests</summary>
+
+            ${{ steps.flaky.outputs.flaky_tests }}
 
             </details>
 
