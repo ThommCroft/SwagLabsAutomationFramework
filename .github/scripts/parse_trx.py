@@ -66,14 +66,15 @@ def sanitize(name):
 
 failed_table_lines = []
 if failed_tests:
-    failed_table_lines.append("| Test | Screenshot (in artifact) | Trace (in artifact) |")
-    failed_table_lines.append("|------|--------------------------|---------------------|")
+    failed_table_lines.append("| Test | Screenshot | Trace | Viewer |")
+    failed_table_lines.append("|------|------------|--------|---------|")
     for r in failed_tests:
         name = r["name"]
         file_base = sanitize(name)
         screenshot = f"Screenshots/{file_base}.png"
         trace = f"Traces/{file_base}.zip"
-        failed_table_lines.append(f"| {name} | `{screenshot}` | `{trace}` |")
+        viewer = "[🔍](https://trace.playwright.dev/)"
+        failed_table_lines.append(f"| {name} | `{screenshot}` | `{trace}` | {viewer} |")
 else:
     failed_table_lines.append("_No failed tests._")
 
