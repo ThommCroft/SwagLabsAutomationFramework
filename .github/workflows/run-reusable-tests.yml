@@ -102,7 +102,7 @@ jobs:
             **/*.trx
             **/Screenshots/**
             **/Traces/**
-            **/test-dashboard.html    # ⭐ NEW: include dashboard
+            test-dashboard.html          # ⭐ FIX: explicit path
 
       # ---------------------------------------------------------
       # 📝 Write artifact name to a file (reliable output passing)
