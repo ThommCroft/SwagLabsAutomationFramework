@@ -26,10 +26,20 @@ jobs:
     steps:
 
       # ---------------------------------------------------------
-      # 📥 Checkout Repository
+      # 📥 Checkout Repository (Dual Mode)
       # ---------------------------------------------------------
-      - name: Checkout repository
+      # If called via workflow_call → checkout the test repo explicitly
+      # If running normally (PR/push) → checkout the current repo
+      - name: Checkout test repository
         uses: actions/checkout@v4
+        with:
+          repository: ThommCroft/SwagLabsAutomationFramework
+          token: ${{ secrets.GITHUB_TOKEN }}
+        if: ${{ github.event_name == 'workflow_call' }}
+
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        if: ${{ github.event_name != 'workflow_call' }}
 
       # ---------------------------------------------------------
       # ⚙️ Setup .NET
@@ -40,7 +50,7 @@ jobs:
           dotnet-version: 8.0.x
 
       # ---------------------------------------------------------
-      # 📦 Restore Dependencies (FIXED)
+      # 📦 Restore Dependencies (Fixed Path)
       # ---------------------------------------------------------
       - name: Restore dependencies
         run: dotnet restore AutomationFramework/AutomationFramework.csproj
