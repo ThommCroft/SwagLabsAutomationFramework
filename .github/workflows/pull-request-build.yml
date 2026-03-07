@@ -107,11 +107,10 @@ jobs:
 
       # ---------------------------------------------------------
       # 🟦 Set output so caller workflow can download artifacts
-      #     Only when invoked via workflow_call
+      #     (Always safe — GitHub only returns outputs for workflow_call)
       # ---------------------------------------------------------
-      - name: Set artifact output (only for workflow_call)
+      - name: Set artifact output
         id: set-artifact
-        if: ${{ github.event_name == 'workflow_call' }}
         run: echo "test-artifact-name=pr-test-results" >> $GITHUB_OUTPUT
 
       # ---------------------------------------------------------
@@ -205,4 +204,3 @@ jobs:
             ${{ steps.flaky.outputs.flaky_tests }}
 
             Dashboard and artifacts are available in GitHub Actions.
-
