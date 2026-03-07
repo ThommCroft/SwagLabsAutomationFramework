@@ -1,0 +1,132 @@
+name: Nightly Regression Run
+
+on:
+  schedule:
+    - cron: "0 2 * * *"   # Runs every night at 2 AM UTC
+    
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build test project
+        run: dotnet build AutomationFramework/AutomationFramework.csproj --configuration Debug --no-restore
+
+      - name: Install Playwright dependencies
+        uses: powershell-devops/powershell-devops@v0.2.0
+
+      - name: Ensure browsers are installed
+        run: pwsh ${{ github.workspace }}/AutomationFramework/bin/Debug/net8.0/playwright.ps1 install --with-deps
+
+      - name: Run Tests
+        continue-on-error: true
+        run: dotnet test AutomationFramework/AutomationFramework.csproj --no-build --verbosity normal --logger "trx;LogFileName=TestReport.trx"
+        
+      - name: Parse TRX and build summary
+        id: summary_data
+        env:
+          PREV_TRX: ""
+          HAS_PREV: "false"
+          ARTIFACT_URL: ""
+        run: |
+          trx_file=$(find . -name "TestReport.trx" | head -n1)
+          export TRX_FILE="$trx_file"
+          export PREV_TRX_PATH=""
+          export HAS_PREV_FLAG="false"
+          export TEST_RESULTS_ARTIFACT_URL=""
+          python .github/scripts/parse_trx.py
+
+                - name: Update test history
+
+              - name: Update test history
+
+      - name: Update test history
+        run: |
+          if [ ! -f test-history.csv ]; then
+            echo "run,total,passed,failed,failure_rate" > test-history.csv
+          fi
+          run_number=$(($(wc -l < test-history.csv)))
+          echo "$run_number,${{ steps.summary_data.outputs.total }},${{ steps.summary_data.outputs.passed }},${{ steps.summary_data.outputs.failed }},${{ steps.summary_data.outputs.failure_rate }}" >> test-history.csv
+
+      - name: Update flake history
+        env:
+          TRX_FILE: ${{ steps.summary_data.outputs.trx_file }}
+          RUN_NUMBER: ${{ steps.summary_data.outputs.total }}
+        run: |
+          if [ ! -f test-flake-history.csv ]; then
+            echo "run,test,outcome" > test-flake-history.csv
+          fi
+          python .github/scripts/update_flake_history.py
+
+      - name: Generate HTML dashboard
+        env:
+          TOTAL: ${{ steps.summary_data.outputs.total }}
+          PASSED: ${{ steps.summary_data.outputs.passed }}
+          FAILED: ${{ steps.summary_data.outputs.failed }}
+          DURATION: ${{ steps.summary_data.outputs.duration }}
+          FAILURE_RATE: ${{ steps.summary_data.outputs.failure_rate }}
+          FAILED_TABLE: ${{ steps.summary_data.outputs.failed_table }}
+          SLOW_TESTS: ${{ steps.summary_data.outputs.slow_tests }}
+          NEW_VS_PREV: ${{ steps.summary_data.outputs.new_vs_prev }}
+          FLAKY_TESTS: ""
+        run: python .github/scripts/generate_dashboard.py
+
+      - name: Generate trend graph
+        run: |
+          pip install pandas matplotlib
+          python .github/scripts/generate_trend_graph.py
+
+      - name: Detect flaky tests
+        id: flaky
+        run: |
+          pip install pandas
+          python .github/scripts/detect_flaky_tests.py
+
+      - name: Upload nightly artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-artifacts
+          path: |
+            test-dashboard.html
+            trend-graph.png
+            test-history.csv
+            test-flake-history.csv
+
+      - name: Send email notification
+        if: steps.summary_data.outputs.failed != '0'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Nightly Regression: ${{ steps.summary_data.outputs.failed }} tests failed"
+          to: "your.email@example.com"
+          from: "ci-bot@example.com"
+          body: |
+            Nightly regression run completed.
+
+            Total tests: ${{ steps.summary_data.outputs.total }}
+            Passed: ${{ steps.summary_data.outputs.passed }}
+            Failed: ${{ steps.summary_data.outputs.failed }}
+            Duration: ${{ steps.summary_data.outputs.duration }} seconds
+
+            Flaky tests:
+            ${{ steps.flaky.outputs.flaky_tests }}
+
+            Dashboard and artifacts are available in GitHub Actions.
