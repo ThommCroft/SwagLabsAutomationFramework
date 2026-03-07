@@ -75,49 +75,37 @@ jobs:
             **/Traces/**
 
       # ---------------------------------------------------------
-      # 📊 Parse TRX and Build Summary (No PR Comparison)
+      # 📊 Parse TRX and Build Summary
       # ---------------------------------------------------------
       - name: Parse TRX and build summary
         id: summary_data
-        env:
-          PREV_TRX: ""
-          HAS_PREV: "false"
-          ARTIFACT_URL: ""
         run: |
           trx_file=$(find . -name "TestReport.trx" | head -n1)
           export TRX_FILE="$trx_file"
-          export PREV_TRX_PATH=""
-          export HAS_PREV_FLAG="false"
-          export TEST_RESULTS_ARTIFACT_URL=""
           python .github/scripts/parse_trx.py
 
       # ---------------------------------------------------------
-      # 🧾 Update Test History (Run-Level)
+      # 🧾 Update Test History
       # ---------------------------------------------------------
       - name: Update test history
         run: |
-          if [ ! -f test-history.csv ]; then
+          if [ ! -s test-history.csv ]; then
             echo "run,total,passed,failed,failure_rate" > test-history.csv
           fi
-
           run_number=$(($(wc -l < test-history.csv)))
           echo "$run_number,${{ steps.summary_data.outputs.total }},${{ steps.summary_data.outputs.passed }},${{ steps.summary_data.outputs.failed }},${{ steps.summary_data.outputs.failure_rate }}" >> test-history.csv
 
       # ---------------------------------------------------------
-      # 🧾 Update Flake History (Per-Test)
+      # 🧾 Update Flake History
       # ---------------------------------------------------------
       - name: Update flake history
-        env:
-          RUN_NUMBER: ${{ steps.summary_data.outputs.total }}
         run: |
-          if [ ! -f test-flake-history.csv ]; then
+          if [ ! -s test-flake-history.csv ]; then
             echo "run,test,outcome" > test-flake-history.csv
           fi
-
           TRX_FILE_PATH=$(find . -name "TestReport.trx" | head -n1)
-          echo "Using TRX file: $TRX_FILE_PATH"
-
           export TRX_FILE="$TRX_FILE_PATH"
+          export RUN_NUMBER="${{ steps.summary_data.outputs.total }}"
           python .github/scripts/update_flake_history.py
 
       # ---------------------------------------------------------
@@ -146,7 +134,7 @@ jobs:
         run: python .github/scripts/generate_dashboard.py
 
       # ---------------------------------------------------------
-      # 📈 Generate Trend Graph (PNG)
+      # 📈 Generate Trend Graph
       # ---------------------------------------------------------
       - name: Generate trend graph
         run: |
@@ -183,11 +171,10 @@ jobs:
           body: |
             Nightly regression run completed with failures.
 
-            Summary:
-            - Total tests: ${{ steps.summary_data.outputs.total }}
-            - Passed: ${{ steps.summary_data.outputs.passed }}
-            - Failed: ${{ steps.summary_data.outputs.failed }}
-            - Duration: ${{ steps.summary_data.outputs.duration }} seconds
+            Total: ${{ steps.summary_data.outputs.total }}
+            Passed: ${{ steps.summary_data.outputs.passed }}
+            Failed: ${{ steps.summary_data.outputs.failed }}
+            Duration: ${{ steps.summary_data.outputs.duration }} seconds
 
             Flaky tests:
             ${{ steps.flaky.outputs.flaky_tests }}
