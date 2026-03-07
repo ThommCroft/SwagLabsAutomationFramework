@@ -22,8 +22,9 @@ defaults:
     shell: bash
 
 jobs:
-  test:   # 🔥 Renamed from pr-tests → test
+  test:
     runs-on: ubuntu-latest
+    continue-on-error: true   # ✅ FIX OPTION 1 — ensures outputs are always exported
 
     permissions:
       contents: read
@@ -91,7 +92,6 @@ jobs:
       # 🧪 Run Tests
       # ---------------------------------------------------------
       - name: Run Tests
-        continue-on-error: true
         run: dotnet test AutomationFramework/AutomationFramework.csproj --no-build --verbosity normal --logger "trx;LogFileName=TestReport.trx"
 
       # ---------------------------------------------------------
