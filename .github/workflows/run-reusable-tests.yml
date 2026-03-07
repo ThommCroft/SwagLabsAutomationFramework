@@ -6,6 +6,9 @@ on:
       build-artifact:
         required: true
         type: string
+      caller-run-id:
+        required: true
+        type: string
     secrets:
       SMTP_USERNAME:
         required: true
@@ -49,6 +52,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.build-artifact }}
+          repository: ThommCroft/PipelineBuildTesting
+          run-id: ${{ inputs.caller-run-id }}
 
       # ---------------------------------------------------------
       # ⚙️ Setup .NET
@@ -145,7 +150,7 @@ jobs:
         run: python .github/scripts/generate_dashboard.py
 
       # ---------------------------------------------------------
-      # 📝 Post PR Comment (Optional for workflow_call)
+      # 📝 Post PR Comment (Optional)
       # ---------------------------------------------------------
       - name: Post PR comment
         if: ${{ github.event_name == 'pull_request' }}
@@ -201,3 +206,4 @@ jobs:
             ${{ steps.flaky.outputs.flaky_tests }}
 
             Dashboard and artifacts are available in GitHub Actions.
+
