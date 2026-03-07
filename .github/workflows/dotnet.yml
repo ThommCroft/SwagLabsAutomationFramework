@@ -181,6 +181,21 @@ jobs:
           python .github/scripts/parse_trx.py
 
       # ---------------------------------------------------------
+      # 🧾 Append per-test results to flake history
+      # ---------------------------------------------------------
+      - name: Update flake history
+        id: flake_history
+        env:
+          TRX_FILE: ${{ steps.summary_data.outputs.trx_file }}
+          RUN_NUMBER: ${{ steps.summary_data.outputs.total }}
+        run: |
+          if [ ! -f test-flake-history.csv ]; then
+            echo "run,test,outcome" > test-flake-history.csv
+          fi
+
+          python .github/scripts/update_flake_history.py
+
+      # ---------------------------------------------------------
       # 🧾 Append current results to test history
       # ---------------------------------------------------------
       - name: Update test history
