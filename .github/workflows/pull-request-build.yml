@@ -1,11 +1,5 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-
 name: Pull Request Build
 
-# ---------------------------------------------------------
-# 🧪 Trigger on Pull Requests + Push to Main
-# ---------------------------------------------------------
 on:
   workflow_call:
     inputs:
@@ -46,10 +40,10 @@ jobs:
           dotnet-version: 8.0.x
 
       # ---------------------------------------------------------
-      # 📦 Restore Dependencies
+      # 📦 Restore Dependencies (FIXED)
       # ---------------------------------------------------------
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore AutomationFramework/AutomationFramework.csproj
 
       # ---------------------------------------------------------
       # 🏗️ Build Test Project
@@ -151,7 +145,7 @@ jobs:
             Download the HTML dashboard from the workflow artifacts.
 
       # ---------------------------------------------------------
-      # 📧 Always Send Email Notification (Improved Subject Line)
+      # 📧 Always Send Email Notification
       # ---------------------------------------------------------
       - name: Send email notification
         if: always()
