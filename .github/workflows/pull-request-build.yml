@@ -30,13 +30,18 @@ jobs:
       pull-requests: write
       actions: read
 
+    # ---------------------------------------------------------
+    # 🟦 Expose artifact name to caller workflow
+    # ---------------------------------------------------------
+    outputs:
+      test-artifact-name: ${{ steps.set-artifact.outputs.test-artifact-name }}
+
     steps:
 
       # ---------------------------------------------------------
       # 📥 Checkout Repository (Reliable Cross‑Repo Logic)
       # ---------------------------------------------------------
 
-      # If the caller repo is NOT the test repo → checkout the test repo
       - name: Checkout test repository
         uses: actions/checkout@v4
         if: ${{ github.repository != 'ThommCroft/SwagLabsAutomationFramework' }}
@@ -45,7 +50,6 @@ jobs:
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
       
-      # If running inside the test repo normally (PR/push) → checkout self
       - name: Checkout current repository
         uses: actions/checkout@v4
         if: ${{ github.repository == 'ThommCroft/SwagLabsAutomationFramework' }}
@@ -59,7 +63,7 @@ jobs:
           dotnet-version: 8.0.x
 
       # ---------------------------------------------------------
-      # 📦 Restore Dependencies (Fixed Path)
+      # 📦 Restore Dependencies
       # ---------------------------------------------------------
       - name: Restore dependencies
         run: dotnet restore AutomationFramework/AutomationFramework.csproj
@@ -83,7 +87,7 @@ jobs:
         run: pwsh ${{ github.workspace }}/AutomationFramework/bin/Debug/net8.0/playwright.ps1 install --with-deps
 
       # ---------------------------------------------------------
-      # 🧪 Run Tests (Continue on Error)
+      # 🧪 Run Tests
       # ---------------------------------------------------------
       - name: Run Tests
         continue-on-error: true
@@ -100,6 +104,13 @@ jobs:
             **/*.trx
             **/Screenshots/**
             **/Traces/**
+
+      # ---------------------------------------------------------
+      # 🟦 Set output so caller workflow can download artifacts
+      # ---------------------------------------------------------
+      - name: Set artifact output
+        id: set-artifact
+        run: echo "test-artifact-name=pr-test-results" >> $GITHUB_OUTPUT
 
       # ---------------------------------------------------------
       # 📊 Parse TRX and Build Summary
