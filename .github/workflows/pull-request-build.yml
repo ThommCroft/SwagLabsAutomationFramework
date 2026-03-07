@@ -26,24 +26,22 @@ jobs:
     steps:
 
       # ---------------------------------------------------------
-      # 📥 Checkout Repository (Dual Mode)
+      # 📥 Checkout Repository (Reliable Cross‑Repo Logic)
       # ---------------------------------------------------------
+
+      # If the caller repo is NOT the test repo → checkout the test repo
       - name: Checkout test repository
         uses: actions/checkout@v4
-        if: ${{ github.event_name == 'workflow_call' }}
+        if: ${{ github.repository != 'ThommCroft/SwagLabsAutomationFramework' }}
         with:
           repository: ThommCroft/SwagLabsAutomationFramework
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
-
+      
+      # If running inside the test repo normally (PR/push) → checkout self
       - name: Checkout current repository
         uses: actions/checkout@v4
-        if: ${{ github.event_name != 'workflow_call' }}
-
-      - name: Debug workspace
-        run: |
-          echo "Workspace contents:"
-          ls -R .
+        if: ${{ github.repository == 'ThommCroft/SwagLabsAutomationFramework' }}
       
       # ---------------------------------------------------------
       # ⚙️ Setup .NET
