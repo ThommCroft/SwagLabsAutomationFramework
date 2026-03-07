@@ -337,3 +337,39 @@ jobs:
         if: steps.summary_data.outputs.failed != '0'
         run: exit 1
 
+      # ---------------------------------------------------------
+      # 📧 Send email notification for PR failures
+      # ---------------------------------------------------------
+      - name: Send email notification
+        if: steps.summary_data.outputs.failed != '0' && github.event_name == 'pull_request'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "PR #${{ github.event.pull_request.number }} Test Failures — ${{ steps.summary_data.outputs.failed }} failed"
+          to: "your.email@example.com"
+          from: "ci-bot@example.com"
+          body: |
+            Hello Thomas,
+
+            The latest PR test run has completed with failures.
+
+            Summary:
+            - Total tests: ${{ steps.summary_data.outputs.total }}
+            - Passed: ${{ steps.summary_data.outputs.passed }}
+            - Failed: ${{ steps.summary_data.outputs.failed }}
+            - Duration: ${{ steps.summary_data.outputs.duration }} seconds
+            - Failure rate: ${{ steps.summary_data.outputs.failure_rate }} %
+
+            Flaky tests:
+            ${{ steps.flaky.outputs.flaky_tests }}
+
+            Artifacts:
+            - Test Results: ${{ steps.summary_data.outputs.artifact_url }}
+            - HTML Dashboard: Available in GitHub Actions artifacts
+            - Trend Graph: Available in GitHub Actions artifacts
+
+            Regards,
+            Your CI Pipeline
