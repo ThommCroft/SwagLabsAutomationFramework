@@ -28,19 +28,23 @@ jobs:
       # ---------------------------------------------------------
       # 📥 Checkout Repository (Dual Mode)
       # ---------------------------------------------------------
-      # If called via workflow_call → checkout the test repo explicitly
-      # If running normally (PR/push) → checkout the current repo
       - name: Checkout test repository
         uses: actions/checkout@v4
+        if: ${{ github.event_name == 'workflow_call' }}
         with:
           repository: ThommCroft/SwagLabsAutomationFramework
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
-        if: ${{ github.event_name == 'workflow_call' }}
 
       - name: Checkout current repository
         uses: actions/checkout@v4
         if: ${{ github.event_name != 'workflow_call' }}
 
+      - name: Debug workspace
+        run: |
+          echo "Workspace contents:"
+          ls -R .
+      
       # ---------------------------------------------------------
       # ⚙️ Setup .NET
       # ---------------------------------------------------------
