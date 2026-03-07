@@ -92,7 +92,7 @@ jobs:
         run: dotnet test AutomationFramework/AutomationFramework.csproj --no-build --verbosity normal --logger "trx;LogFileName=TestReport.trx"
 
       # ---------------------------------------------------------
-      # 📤 Upload TRX + Screenshots + Traces
+      # 📤 Upload TRX + Screenshots + Traces + Dashboard
       # ---------------------------------------------------------
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -102,6 +102,7 @@ jobs:
             **/*.trx
             **/Screenshots/**
             **/Traces/**
+            **/test-dashboard.html    # ⭐ NEW: include dashboard
 
       # ---------------------------------------------------------
       # 📝 Write artifact name to a file (reliable output passing)
