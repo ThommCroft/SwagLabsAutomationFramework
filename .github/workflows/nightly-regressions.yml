@@ -1,11 +1,11 @@
 name: Nightly Regression Run
 
 # ---------------------------------------------------------
-# 🕒 Nightly Schedule (2 AM UTC)
+# 🕒 Nightly Schedule (MIDNIGHT)
 # ---------------------------------------------------------
 on:
   schedule:
-    - cron: "0 2 * * *"
+    - cron: "0 23 * * *"
 
 jobs:
   nightly:
