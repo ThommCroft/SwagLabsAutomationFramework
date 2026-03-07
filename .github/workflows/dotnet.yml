@@ -250,6 +250,7 @@ jobs:
           FAILED_TABLE: ${{ steps.summary_data.outputs.failed_table }}
           SLOW_TESTS: ${{ steps.summary_data.outputs.slow_tests }}
           NEW_VS_PREV: ${{ steps.summary_data.outputs.new_vs_prev }}
+          FLAKY_TESTS: ${{ steps.flaky.outputs.flaky_tests }}
         run: |
           python .github/scripts/generate_dashboard.py
 
