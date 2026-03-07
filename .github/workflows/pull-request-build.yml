@@ -1,14 +1,18 @@
 # This workflow will build a .NET project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
 
-name: PR Test Pipeline
+name: Pull Request Build
 
 # ---------------------------------------------------------
-# 🧪 Trigger on Pull Requests
+# 🧪 Trigger on Pull Requests + Push to Main
 # ---------------------------------------------------------
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+
+  push:
+    branches:
+      - main
 
 jobs:
   pr-tests:
@@ -166,3 +170,4 @@ jobs:
             ${{ steps.flaky.outputs.flaky_tests }}
 
             Dashboard and artifacts are available in GitHub Actions.
+
