@@ -185,15 +185,21 @@ jobs:
       # ---------------------------------------------------------
       - name: Update flake history
         id: flake_history
-        env:
-          TRX_FILE: ${{ steps.summary_data.outputs.trx_file }}
-          RUN_NUMBER: ${{ steps.summary_data.outputs.total }}
         run: |
           if [ ! -f test-flake-history.csv ]; then
             echo "run,test,outcome" > test-flake-history.csv
           fi
 
+          # Find the TRX file
+          TRX_FILE_PATH=$(find . -name "TestReport.trx" | head -n1)
+          echo "Using TRX file: $TRX_FILE_PATH"
+
+          # Export for Python script
+          export TRX_FILE="$TRX_FILE_PATH"
+          export RUN_NUMBER="${{ steps.summary_data.outputs.total }}"
+
           python .github/scripts/update_flake_history.py
+
 
       # ---------------------------------------------------------
       # 🧾 Append current results to test history
