@@ -39,9 +39,8 @@ jobs:
     steps:
 
       # ---------------------------------------------------------
-      # 📥 Checkout Repository (Reliable Cross‑Repo Logic)
+      # 📥 Checkout Repository
       # ---------------------------------------------------------
-
       - name: Checkout test repository
         uses: actions/checkout@v4
         if: ${{ github.repository != 'ThommCroft/SwagLabsAutomationFramework' }}
@@ -53,7 +52,7 @@ jobs:
       - name: Checkout current repository
         uses: actions/checkout@v4
         if: ${{ github.repository == 'ThommCroft/SwagLabsAutomationFramework' }}
-      
+
       # ---------------------------------------------------------
       # ⚙️ Setup .NET
       # ---------------------------------------------------------
@@ -106,8 +105,7 @@ jobs:
             **/Traces/**
 
       # ---------------------------------------------------------
-      # 🟦 Set output so caller workflow can download artifacts
-      #     (Always safe — GitHub only returns outputs for workflow_call)
+      # 🟦 Set output (ALWAYS)
       # ---------------------------------------------------------
       - name: Set artifact output
         id: set-artifact
