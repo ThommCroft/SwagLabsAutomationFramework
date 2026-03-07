@@ -24,11 +24,12 @@ defaults:
 jobs:
   test:
     runs-on: ubuntu-latest
+    continue-on-error: true   # ⭐ FIX: job-level continue-on-error so outputs propagate
 
     permissions:
       contents: read
       pull-requests: write
-      actions: write
+      actions: write          # ⭐ REQUIRED for reusable workflow outputs
 
     outputs:
       test-artifact-name: ${{ steps.set-artifact.outputs.test-artifact-name }}
@@ -91,7 +92,6 @@ jobs:
       # 🧪 Run Tests
       # ---------------------------------------------------------
       - name: Run Tests
-        continue-on-error: true   # ✅ Only the test step is allowed to fail
         run: dotnet test AutomationFramework/AutomationFramework.csproj --no-build --verbosity normal --logger "trx;LogFileName=TestReport.trx"
 
       # ---------------------------------------------------------
