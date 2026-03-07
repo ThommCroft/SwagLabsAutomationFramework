@@ -22,7 +22,7 @@ defaults:
     shell: bash
 
 jobs:
-  pr-tests:
+  test:   # 🔥 Renamed from pr-tests → test
     runs-on: ubuntu-latest
 
     permissions:
@@ -206,4 +206,3 @@ jobs:
             ${{ steps.flaky.outputs.flaky_tests }}
 
             Dashboard and artifacts are available in GitHub Actions.
-
