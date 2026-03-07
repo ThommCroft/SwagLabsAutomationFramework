@@ -24,15 +24,12 @@ defaults:
 jobs:
   test:
     runs-on: ubuntu-latest
-    continue-on-error: true   # ⭐ FIX: job-level continue-on-error so outputs propagate
+    continue-on-error: true   # ⭐ Ensures job is marked successful so artifacts always upload
 
     permissions:
       contents: read
       pull-requests: write
-      actions: write          # ⭐ REQUIRED for reusable workflow outputs
-
-    outputs:
-      test-artifact-name: ${{ steps.set-artifact.outputs.test-artifact-name }}
+      actions: write          # ⭐ Required for artifact upload
 
     steps:
 
@@ -107,13 +104,16 @@ jobs:
             **/Traces/**
 
       # ---------------------------------------------------------
-      # 🟦 Set output (ALWAYS)
+      # 📝 Write artifact name to a file (reliable output passing)
       # ---------------------------------------------------------
-      - name: Set artifact output
-        id: set-artifact
-        if: always()
-        run: |
-          echo "test-artifact-name=pr-test-results" >> $GITHUB_OUTPUT
+      - name: Write artifact name
+        run: echo "pr-test-results" > artifact-name.txt
+
+      - name: Upload artifact name file
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifact-name
+          path: artifact-name.txt
 
       # ---------------------------------------------------------
       # 📊 Parse TRX and Build Summary
