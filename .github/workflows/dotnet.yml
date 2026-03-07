@@ -211,6 +211,18 @@ jobs:
 
             </details>
 
+            ### 📸 Failed Test Screenshots
+            <details>
+            <summary>View screenshots</summary>
+
+            > Screenshots are stored in the **test-results** artifact under `TestResults/Screenshots/`.
+
+            _Example pattern:_
+
+            - `TestResults/Screenshots/<sanitized-test-name>.png`
+
+            </details>
+            
             ### 🐢 Slowest Tests
             <details>
             <summary>Top 5 slowest tests</summary>
