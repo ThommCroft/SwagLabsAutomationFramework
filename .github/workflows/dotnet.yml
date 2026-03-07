@@ -181,6 +181,47 @@ jobs:
           python .github/scripts/parse_trx.py
 
       # ---------------------------------------------------------
+      # 🧾 Append current results to test history
+      # ---------------------------------------------------------
+      - name: Update test history
+        id: history
+        run: |
+          # Create file if missing
+          if [ ! -f test-history.csv ]; then
+            echo "run,total,passed,failed,failure_rate" > test-history.csv
+          fi
+
+          # Append this run
+          run_number=$(($(wc -l < test-history.csv)))
+          echo "$run_number,${{ steps.summary_data.outputs.total }},${{ steps.summary_data.outputs.passed }},${{ steps.summary_data.outputs.failed }},${{ steps.summary_data.outputs.failure_rate }}" >> test-history.csv
+
+      # ---------------------------------------------------------
+      # 🖥️ Generate HTML dashboard
+      # ---------------------------------------------------------
+      - name: Generate HTML dashboard
+        id: dashboard
+        env:
+          TOTAL: ${{ steps.summary_data.outputs.total }}
+          PASSED: ${{ steps.summary_data.outputs.passed }}
+          FAILED: ${{ steps.summary_data.outputs.failed }}
+          DURATION: ${{ steps.summary_data.outputs.duration }}
+          FAILURE_RATE: ${{ steps.summary_data.outputs.failure_rate }}
+          FAILED_TABLE: ${{ steps.summary_data.outputs.failed_table }}
+          SLOW_TESTS: ${{ steps.summary_data.outputs.slow_tests }}
+          NEW_VS_PREV: ${{ steps.summary_data.outputs.new_vs_prev }}
+        run: |
+          python .github/scripts/generate_dashboard.py
+
+      # ---------------------------------------------------------
+      # 📤 Upload HTML dashboard
+      # ---------------------------------------------------------
+      - name: Upload HTML dashboard
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-dashboard
+          path: test-dashboard.html
+
+      # ---------------------------------------------------------
       # 💬 Post PR comment with test summary
       # ---------------------------------------------------------
       - name: Add PR Comment with Test Summary
