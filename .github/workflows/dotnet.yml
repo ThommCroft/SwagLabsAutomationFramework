@@ -196,6 +196,23 @@ jobs:
           echo "$run_number,${{ steps.summary_data.outputs.total }},${{ steps.summary_data.outputs.passed }},${{ steps.summary_data.outputs.failed }},${{ steps.summary_data.outputs.failure_rate }}" >> test-history.csv
 
       # ---------------------------------------------------------
+      # 📈 Generate trend graph (PNG)
+      # ---------------------------------------------------------
+      - name: Generate trend graph
+        run: |
+          pip install pandas matplotlib
+          python .github/scripts/generate_trend_graph.py
+
+      # ---------------------------------------------------------
+      # 📤 Upload trend graph
+      # ---------------------------------------------------------
+      - name: Upload trend graph
+        uses: actions/upload-artifact@v4
+        with:
+          name: trend-graph
+          path: trend-graph.png
+
+      # ---------------------------------------------------------
       # 🖥️ Generate HTML dashboard
       # ---------------------------------------------------------
       - name: Generate HTML dashboard
