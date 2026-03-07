@@ -1,0 +1,194 @@
+name: Run Tests (Reusable Workflow)
+
+on:
+  workflow_call:
+    inputs:
+      build-artifact:
+        required: true
+        type: string
+    secrets:
+      SMTP_USERNAME:
+        required: true
+      SMTP_PASSWORD:
+        required: true
+      EMAIL_RECIPIENTS:
+        required: true
+
+jobs:
+  pr-tests:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+
+    # ---------------------------------------------------------
+    # 🟦 Expose artifact name to caller workflow
+    # ---------------------------------------------------------
+    outputs:
+      test-artifact-name: ${{ steps.set-artifact.outputs.test-artifact-name }}
+
+    steps:
+
+      # ---------------------------------------------------------
+      # 📥 Checkout Repository
+      # ---------------------------------------------------------
+      - name: Checkout test repository
+        uses: actions/checkout@v4
+        with:
+          repository: ThommCroft/SwagLabsAutomationFramework
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---------------------------------------------------------
+      # ⚙️ Setup .NET
+      # ---------------------------------------------------------
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # ---------------------------------------------------------
+      # 📦 Restore Dependencies
+      # ---------------------------------------------------------
+      - name: Restore dependencies
+        run: dotnet restore AutomationFramework/AutomationFramework.csproj
+
+      # ---------------------------------------------------------
+      # 🏗️ Build Test Project
+      # ---------------------------------------------------------
+      - name: Build test project
+        run: dotnet build AutomationFramework/AutomationFramework.csproj --configuration Debug --no-restore
+
+      # ---------------------------------------------------------
+      # 🌐 Install Playwright Dependencies
+      # ---------------------------------------------------------
+      - name: Install Playwright dependencies
+        uses: powershell-devops/powershell-devops@v0.2.0
+
+      # ---------------------------------------------------------
+      # 🎭 Ensure Playwright Browsers Installed
+      # ---------------------------------------------------------
+      - name: Ensure browsers are installed
+        run: pwsh ${{ github.workspace }}/AutomationFramework/bin/Debug/net8.0/playwright.ps1 install --with-deps
+
+      # ---------------------------------------------------------
+      # 🧪 Run Tests
+      # ---------------------------------------------------------
+      - name: Run Tests
+        continue-on-error: true
+        run: dotnet test AutomationFramework/AutomationFramework.csproj --no-build --verbosity normal --logger "trx;LogFileName=TestReport.trx"
+
+      # ---------------------------------------------------------
+      # 📤 Upload TRX + Screenshots + Traces
+      # ---------------------------------------------------------
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-test-results
+          path: |
+            **/*.trx
+            **/Screenshots/**
+            **/Traces/**
+
+      # ---------------------------------------------------------
+      # 🟦 Set output (ALWAYS)
+      # ---------------------------------------------------------
+      - name: Set artifact output
+        id: set-artifact
+        run: |
+          echo "test-artifact-name=pr-test-results" >> $GITHUB_OUTPUT
+
+      # ---------------------------------------------------------
+      # 📊 Parse TRX and Build Summary
+      # ---------------------------------------------------------
+      - name: Parse TRX and build summary
+        id: summary_data
+        run: |
+          trx_file=$(find . -name "TestReport.trx" | head -n1)
+          export TRX_FILE="$trx_file"
+          python .github/scripts/parse_trx.py
+
+      # ---------------------------------------------------------
+      # 🧹 Detect Flaky Tests
+      # ---------------------------------------------------------
+      - name: Detect flaky tests
+        id: flaky
+        run: |
+          pip install pandas
+          python .github/scripts/detect_flaky_tests.py
+
+      # ---------------------------------------------------------
+      # 🖥️ Generate HTML Dashboard
+      # ---------------------------------------------------------
+      - name: Generate HTML dashboard
+        env:
+          TOTAL: ${{ steps.summary_data.outputs.total }}
+          PASSED: ${{ steps.summary_data.outputs.passed }}
+          FAILED: ${{ steps.summary_data.outputs.failed }}
+          DURATION: ${{ steps.summary_data.outputs.duration }}
+          FAILURE_RATE: ${{ steps.summary_data.outputs.failure_rate }}
+          FAILED_TABLE: ${{ steps.summary_data.outputs.failed_table }}
+          SLOW_TESTS: ${{ steps.summary_data.outputs.slow_tests }}
+          NEW_VS_PREV: ${{ steps.summary_data.outputs.new_vs_prev }}
+          FLAKY_TESTS: ${{ steps.flaky.outputs.flaky_tests }}
+        run: python .github/scripts/generate_dashboard.py
+
+      # ---------------------------------------------------------
+      # 📝 Post PR Comment (Optional for workflow_call)
+      # ---------------------------------------------------------
+      - name: Post PR comment
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          recreate: true
+          message: |
+            ## 🧪 Test Results
+            **Total:** ${{ steps.summary_data.outputs.total }}  
+            **Passed:** ${{ steps.summary_data.outputs.passed }}  
+            **Failed:** ${{ steps.summary_data.outputs.failed }}  
+            **Duration:** ${{ steps.summary_data.outputs.duration }} seconds  
+            **Failure Rate:** ${{ steps.summary_data.outputs.failure_rate }} %
+
+            ### ❌ Failed Tests
+            ${{ steps.summary_data.outputs.failed_table }}
+
+            ### 🐢 Slow Tests
+            ${{ steps.summary_data.outputs.slow_tests }}
+
+            ### 🔁 Flaky Tests
+            ${{ steps.flaky.outputs.flaky_tests }}
+
+            ### 📊 Dashboard
+            Download the HTML dashboard from the workflow artifacts.
+
+      # ---------------------------------------------------------
+      # 📧 Always Send Email Notification
+      # ---------------------------------------------------------
+      - name: Send email notification
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          to: ${{ secrets.EMAIL_RECIPIENTS }}
+          from: "ci-bot <${{ secrets.SMTP_USERNAME }}>"
+          subject: >
+            Test Run —
+            ${{ steps.summary_data.outputs.failed != '0' && '❌ Failures Detected' || '✅ All Tests Passed' }}
+          body: |
+            Automated test run has completed.
+
+            Total: ${{ steps.summary_data.outputs.total }}
+            Passed: ${{ steps.summary_data.outputs.passed }}
+            Failed: ${{ steps.summary_data.outputs.failed }}
+            Duration: ${{ steps.summary_data.outputs.duration }} seconds
+            Failure Rate: ${{ steps.summary_data.outputs.failure_rate }} %
+
+            Flaky tests:
+            ${{ steps.flaky.outputs.flaky_tests }}
+
+            Dashboard and artifacts are available in GitHub Actions.
