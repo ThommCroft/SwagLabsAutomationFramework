@@ -1,9 +1,12 @@
 name: Nightly Regression Run
 
+# ---------------------------------------------------------
+# 🕒 Nightly Schedule (2 AM UTC)
+# ---------------------------------------------------------
 on:
   schedule:
-    - cron: "0 2 * * *"   # Runs every night at 2 AM UTC
-    
+    - cron: "0 2 * * *"
+
 jobs:
   nightly:
     runs-on: ubuntu-latest
@@ -13,30 +16,67 @@ jobs:
       actions: read
 
     steps:
+
+      # ---------------------------------------------------------
+      # 📥 Checkout Repository
+      # ---------------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ---------------------------------------------------------
+      # ⚙️ Setup .NET
+      # ---------------------------------------------------------
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
+      # ---------------------------------------------------------
+      # 📦 Restore Dependencies
+      # ---------------------------------------------------------
       - name: Restore dependencies
         run: dotnet restore
 
+      # ---------------------------------------------------------
+      # 🏗️ Build Test Project
+      # ---------------------------------------------------------
       - name: Build test project
         run: dotnet build AutomationFramework/AutomationFramework.csproj --configuration Debug --no-restore
 
+      # ---------------------------------------------------------
+      # 🌐 Install Playwright Dependencies
+      # ---------------------------------------------------------
       - name: Install Playwright dependencies
         uses: powershell-devops/powershell-devops@v0.2.0
 
+      # ---------------------------------------------------------
+      # 🎭 Ensure Playwright Browsers Installed
+      # ---------------------------------------------------------
       - name: Ensure browsers are installed
         run: pwsh ${{ github.workspace }}/AutomationFramework/bin/Debug/net8.0/playwright.ps1 install --with-deps
 
+      # ---------------------------------------------------------
+      # 🧪 Run Tests (Continue on Error)
+      # ---------------------------------------------------------
       - name: Run Tests
         continue-on-error: true
         run: dotnet test AutomationFramework/AutomationFramework.csproj --no-build --verbosity normal --logger "trx;LogFileName=TestReport.trx"
-        
+
+      # ---------------------------------------------------------
+      # 📤 Upload TRX + Screenshots + Traces
+      # ---------------------------------------------------------
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-test-results
+          path: |
+            **/*.trx
+            **/Screenshots/**
+            **/Traces/**
+
+      # ---------------------------------------------------------
+      # 📊 Parse TRX and Build Summary (No PR Comparison)
+      # ---------------------------------------------------------
       - name: Parse TRX and build summary
         id: summary_data
         env:
@@ -51,28 +91,47 @@ jobs:
           export TEST_RESULTS_ARTIFACT_URL=""
           python .github/scripts/parse_trx.py
 
-                - name: Update test history
-
-              - name: Update test history
-
+      # ---------------------------------------------------------
+      # 🧾 Update Test History (Run-Level)
+      # ---------------------------------------------------------
       - name: Update test history
         run: |
           if [ ! -f test-history.csv ]; then
             echo "run,total,passed,failed,failure_rate" > test-history.csv
           fi
+
           run_number=$(($(wc -l < test-history.csv)))
           echo "$run_number,${{ steps.summary_data.outputs.total }},${{ steps.summary_data.outputs.passed }},${{ steps.summary_data.outputs.failed }},${{ steps.summary_data.outputs.failure_rate }}" >> test-history.csv
 
+      # ---------------------------------------------------------
+      # 🧾 Update Flake History (Per-Test)
+      # ---------------------------------------------------------
       - name: Update flake history
         env:
-          TRX_FILE: ${{ steps.summary_data.outputs.trx_file }}
           RUN_NUMBER: ${{ steps.summary_data.outputs.total }}
         run: |
           if [ ! -f test-flake-history.csv ]; then
             echo "run,test,outcome" > test-flake-history.csv
           fi
+
+          TRX_FILE_PATH=$(find . -name "TestReport.trx" | head -n1)
+          echo "Using TRX file: $TRX_FILE_PATH"
+
+          export TRX_FILE="$TRX_FILE_PATH"
           python .github/scripts/update_flake_history.py
 
+      # ---------------------------------------------------------
+      # 🧹 Detect Flaky Tests
+      # ---------------------------------------------------------
+      - name: Detect flaky tests
+        id: flaky
+        run: |
+          pip install pandas
+          python .github/scripts/detect_flaky_tests.py
+
+      # ---------------------------------------------------------
+      # 🖥️ Generate HTML Dashboard
+      # ---------------------------------------------------------
       - name: Generate HTML dashboard
         env:
           TOTAL: ${{ steps.summary_data.outputs.total }}
@@ -82,21 +141,21 @@ jobs:
           FAILURE_RATE: ${{ steps.summary_data.outputs.failure_rate }}
           FAILED_TABLE: ${{ steps.summary_data.outputs.failed_table }}
           SLOW_TESTS: ${{ steps.summary_data.outputs.slow_tests }}
-          NEW_VS_PREV: ${{ steps.summary_data.outputs.new_vs_prev }}
-          FLAKY_TESTS: ""
+          NEW_VS_PREV: ""
+          FLAKY_TESTS: ${{ steps.flaky.outputs.flaky_tests }}
         run: python .github/scripts/generate_dashboard.py
 
+      # ---------------------------------------------------------
+      # 📈 Generate Trend Graph (PNG)
+      # ---------------------------------------------------------
       - name: Generate trend graph
         run: |
           pip install pandas matplotlib
           python .github/scripts/generate_trend_graph.py
 
-      - name: Detect flaky tests
-        id: flaky
-        run: |
-          pip install pandas
-          python .github/scripts/detect_flaky_tests.py
-
+      # ---------------------------------------------------------
+      # 📤 Upload Nightly Artifacts
+      # ---------------------------------------------------------
       - name: Upload nightly artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -107,6 +166,9 @@ jobs:
             test-history.csv
             test-flake-history.csv
 
+      # ---------------------------------------------------------
+      # 📧 Email Notification (Only if Failures)
+      # ---------------------------------------------------------
       - name: Send email notification
         if: steps.summary_data.outputs.failed != '0'
         uses: dawidd6/action-send-mail@v3
@@ -115,16 +177,17 @@ jobs:
           server_port: 465
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "Nightly Regression: ${{ steps.summary_data.outputs.failed }} tests failed"
           to: ${{ secrets.EMAIL_RECIPIENTS }}
-          from: "ci-bot@example.com"
+          from: "ci-bot <${{ secrets.SMTP_USERNAME }}>"
+          subject: "Nightly Regression Failure — ${{ steps.summary_data.outputs.failed }} tests failed"
           body: |
-            Nightly regression run completed.
+            Nightly regression run completed with failures.
 
-            Total tests: ${{ steps.summary_data.outputs.total }}
-            Passed: ${{ steps.summary_data.outputs.passed }}
-            Failed: ${{ steps.summary_data.outputs.failed }}
-            Duration: ${{ steps.summary_data.outputs.duration }} seconds
+            Summary:
+            - Total tests: ${{ steps.summary_data.outputs.total }}
+            - Passed: ${{ steps.summary_data.outputs.passed }}
+            - Failed: ${{ steps.summary_data.outputs.failed }}
+            - Duration: ${{ steps.summary_data.outputs.duration }} seconds
 
             Flaky tests:
             ${{ steps.flaky.outputs.flaky_tests }}
