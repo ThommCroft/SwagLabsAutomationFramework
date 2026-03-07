@@ -107,9 +107,11 @@ jobs:
 
       # ---------------------------------------------------------
       # 🟦 Set output so caller workflow can download artifacts
+      #     Only when invoked via workflow_call
       # ---------------------------------------------------------
-      - name: Set artifact output
+      - name: Set artifact output (only for workflow_call)
         id: set-artifact
+        if: ${{ github.event_name == 'workflow_call' }}
         run: echo "test-artifact-name=pr-test-results" >> $GITHUB_OUTPUT
 
       # ---------------------------------------------------------
