@@ -27,9 +27,6 @@ jobs:
       pull-requests: write
       actions: read
 
-    # ---------------------------------------------------------
-    # 🟦 Expose artifact name to caller workflow
-    # ---------------------------------------------------------
     outputs:
       test-artifact-name: ${{ steps.set-artifact.outputs.test-artifact-name }}
 
@@ -44,6 +41,14 @@ jobs:
           repository: ThommCroft/SwagLabsAutomationFramework
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---------------------------------------------------------
+      # 📥 Download build artifact from caller workflow
+      # ---------------------------------------------------------
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.build-artifact }}
 
       # ---------------------------------------------------------
       # ⚙️ Setup .NET
