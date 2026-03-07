@@ -105,11 +105,29 @@ jobs:
             **/Traces/**
 
       # ---------------------------------------------------------
+      # 🟦 DEBUG 1 — List workspace after upload
+      # ---------------------------------------------------------
+      - name: Debug — list workspace after upload
+        run: |
+          echo "=== WORKSPACE CONTENTS AFTER UPLOAD ==="
+          ls -R .
+
+      # ---------------------------------------------------------
       # 🟦 Set output (ALWAYS)
       # ---------------------------------------------------------
       - name: Set artifact output
         id: set-artifact
-        run: echo "test-artifact-name=pr-test-results" >> $GITHUB_OUTPUT
+        run: |
+          echo "Setting output test-artifact-name=pr-test-results"
+          echo "test-artifact-name=pr-test-results" >> $GITHUB_OUTPUT
+
+      # ---------------------------------------------------------
+      # 🟦 DEBUG 2 — Print step output
+      # ---------------------------------------------------------
+      - name: Debug — print step output
+        run: |
+          echo "=== STEP OUTPUT VALUE ==="
+          echo "Value: ${{ steps.set-artifact.outputs.test-artifact-name }}"
 
       # ---------------------------------------------------------
       # 📊 Parse TRX and Build Summary
@@ -145,6 +163,14 @@ jobs:
           NEW_VS_PREV: ${{ steps.summary_data.outputs.new_vs_prev }}
           FLAKY_TESTS: ${{ steps.flaky.outputs.flaky_tests }}
         run: python .github/scripts/generate_dashboard.py
+
+      # ---------------------------------------------------------
+      # 🟦 DEBUG 3 — Print job-level output
+      # ---------------------------------------------------------
+      - name: Debug — print job output
+        run: |
+          echo "=== JOB OUTPUT VALUE ==="
+          echo "Value: ${{ steps.set-artifact.outputs.test-artifact-name }}"
 
       # ---------------------------------------------------------
       # 📝 Post PR Comment
