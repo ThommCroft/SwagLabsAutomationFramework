@@ -155,10 +155,10 @@ jobs:
             test-flake-history.csv
 
       # ---------------------------------------------------------
-      # 📧 Email Notification (Only if Failures)
+      # 📧 Always Send Nightly Email Notification
       # ---------------------------------------------------------
-      - name: Send email notification
-        if: steps.summary_data.outputs.failed != '0'
+      - name: Send nightly email notification
+        if: always()
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -167,16 +167,19 @@ jobs:
           password: ${{ secrets.SMTP_PASSWORD }}
           to: ${{ secrets.EMAIL_RECIPIENTS }}
           from: "ci-bot <${{ secrets.SMTP_USERNAME }}>"
-          subject: "Nightly Regression Failure — ${{ steps.summary_data.outputs.failed }} tests failed"
+          subject: >
+            Nightly Regression —
+            ${{ steps.summary_data.outputs.failed != '0' && '❌ Failures Detected' || '✅ All Tests Passed' }}
           body: |
-            Nightly regression run completed with failures.
+            The nightly regression run has completed.
 
             Total: ${{ steps.summary_data.outputs.total }}
             Passed: ${{ steps.summary_data.outputs.passed }}
             Failed: ${{ steps.summary_data.outputs.failed }}
             Duration: ${{ steps.summary_data.outputs.duration }} seconds
+            Failure Rate: ${{ steps.summary_data.outputs.failure_rate }} %
 
             Flaky tests:
             ${{ steps.flaky.outputs.flaky_tests }}
 
-            Dashboard and artifacts are available in GitHub Actions.
+            Trend graph, dashboard, and all artifacts are available in GitHub Actions.
