@@ -7,6 +7,12 @@ name: Pull Request Build
 # 🧪 Trigger on Pull Requests + Push to Main
 # ---------------------------------------------------------
 on:
+  workflow_call:
+    inputs:
+      build-artifact:
+        required: true
+        type: string
+        
   pull_request:
     types: [opened, synchronize, reopened]
 
