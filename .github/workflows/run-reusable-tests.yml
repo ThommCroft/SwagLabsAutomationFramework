@@ -24,7 +24,6 @@ defaults:
 jobs:
   test:
     runs-on: ubuntu-latest
-    continue-on-error: true   # ✅ FIX OPTION 1 — ensures outputs are always exported
 
     permissions:
       contents: read
@@ -92,6 +91,7 @@ jobs:
       # 🧪 Run Tests
       # ---------------------------------------------------------
       - name: Run Tests
+        continue-on-error: true   # ✅ Only the test step is allowed to fail
         run: dotnet test AutomationFramework/AutomationFramework.csproj --no-build --verbosity normal --logger "trx;LogFileName=TestReport.trx"
 
       # ---------------------------------------------------------
@@ -111,6 +111,7 @@ jobs:
       # ---------------------------------------------------------
       - name: Set artifact output
         id: set-artifact
+        if: always()
         run: |
           echo "test-artifact-name=pr-test-results" >> $GITHUB_OUTPUT
 
