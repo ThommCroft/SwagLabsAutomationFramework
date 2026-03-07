@@ -116,7 +116,7 @@ jobs:
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
           subject: "Nightly Regression: ${{ steps.summary_data.outputs.failed }} tests failed"
-          to: "your.email@example.com"
+          to: ${{ secrets.EMAIL_RECIPIENTS }}
           from: "ci-bot@example.com"
           body: |
             Nightly regression run completed.
