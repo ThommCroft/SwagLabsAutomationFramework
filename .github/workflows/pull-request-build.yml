@@ -6,6 +6,13 @@ on:
       build-artifact:
         required: true
         type: string
+    secrets:
+      SMTP_USERNAME:
+        required: true
+      SMTP_PASSWORD:
+        required: true
+      EMAIL_RECIPIENTS:
+        required: true
         
   pull_request:
     types: [opened, synchronize, reopened]
