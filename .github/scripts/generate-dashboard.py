@@ -63,6 +63,9 @@ th, td {{
 <h2>Comparison with main</h2>
 <pre>{new_vs_prev}</pre>
 
+<h2>Flaky Tests</h2>
+<pre>{flaky_tests}</pre>
+
 </body>
 </html>
 """
