@@ -9,6 +9,7 @@ failure_rate = os.environ["FAILURE_RATE"]
 failed_table = os.environ["FAILED_TABLE"]
 slow_tests = os.environ["SLOW_TESTS"]
 new_vs_prev = os.environ["NEW_VS_PREV"]
+flaky_tests = os.environ["FLAKY_TESTS"]
 
 html = f"""
 <html>
