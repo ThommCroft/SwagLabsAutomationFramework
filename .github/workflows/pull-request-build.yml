@@ -163,6 +163,30 @@ jobs:
           path: artifacts
 
       # ---------------------------------------------------------
+      # 🗂️ Combine all test results into a single clean folder
+      # ---------------------------------------------------------
+      - name: Combine test results into unified folder
+        run: |
+          mkdir combined-results
+
+          # Copy TRX files
+          find artifacts -name "*.trx" -exec cp {} combined-results/ \;
+
+          # Copy ExtentReport
+          find artifacts -name "ExtentReport.html" -exec cp {} combined-results/ \;
+
+          # Copy screenshots
+          mkdir -p combined-results/screenshots
+          find artifacts -type f -name "*.png" -exec cp {} combined-results/screenshots/ \;
+
+          # Copy Playwright traces
+          mkdir -p combined-results/traces
+          find artifacts -type f -name "*.zip" -exec cp {} combined-results/traces/ \;
+
+          echo "Unified folder structure created:"
+          ls -R combined-results
+
+      # ---------------------------------------------------------
       # 🏷️ Determine ZIP name dynamically
       # ---------------------------------------------------------
       - name: Set ZIP name
@@ -179,7 +203,7 @@ jobs:
       # ---------------------------------------------------------
       - name: Zip all test artifacts
         run: |
-          zip -r "${{ steps.zipname.outputs.zip_name }}" artifacts
+          zip -r "${{ steps.zipname.outputs.zip_name }}" combined-results
 
       # ---------------------------------------------------------
       # 📝 Post PR Comment (Improved UI + Dashboard Link)
