@@ -189,7 +189,7 @@ jobs:
             echo "\${{ steps.flaky.outputs.flaky_tests }}"
             echo ""
             echo "### 📦 Artifacts"
-            echo "[**\${{ steps.zipname.outputs.zip_name }}**](https://github.com/\${{ github.repository }}/actions/runs/\${{ github.run_id }}#artifacts)"
+            echo "<a href=\"https://github.com/\${{ github.repository }}/actions/runs/\${{ github.run_id }}#artifacts\"><strong>\${{ steps.zipname.outputs.zip_name }}</strong></a>"
             echo ""
           } >> $GITHUB_STEP_SUMMARY
 
