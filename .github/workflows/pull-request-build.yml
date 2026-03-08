@@ -148,8 +148,8 @@ jobs:
             echo "${{ steps.flaky.outputs.flaky_tests }}"
             echo ""
             echo "### 📦 Artifacts"
-            echo "Download all test results (ZIP, TRX, ExtentReport, screenshots, traces):"
-            echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
+            echo "Download the unified test results package (ZIP):"
+            echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             echo ""
           } >> $GITHUB_STEP_SUMMARY
 
@@ -252,19 +252,19 @@ jobs:
 
             ### 📊 Dashboard
             The full HTML dashboard is available in the workflow artifacts.  
-            👉 **[Open Dashboard](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)**
+            👉 **[Open Dashboard](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**
 
             ---
 
             ### 📦 Artifacts
             **ZIP File:** `${{ steps.zipname.outputs.zip_name }}`  
-            **Download:** 👉 [View & Download Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)
+            👉 **[Unified Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**
 
             Contains:
             - TRX test results  
             - ExtentReport HTML  
-            - Screenshots  
-            - Playwright traces  
+            - screenshots/  
+            - traces/  
 
             ---
 
@@ -297,13 +297,16 @@ jobs:
             <pre>${{ steps.flaky.outputs.flaky_tests }}</pre>
 
             <h3>Attachments</h3>
-            <p>The ZIP file contains:</p>
+            <p>The ZIP file contains a unified test results package:</p>
             <ul>
               <li>TestReport.trx</li>
               <li>ExtentReport.html</li>
-              <li>Screenshots</li>
-              <li>Traces</li>
+              <li>screenshots/ (PNG files)</li>
+              <li>traces/ (Playwright trace ZIPs)</li>
             </ul>
+
+            <p>You can also view the full run here:</p>
+            <p><a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">Open GitHub Actions Run</a></p>
 
           attachments: |
             ${{ steps.zipname.outputs.zip_name }}
