@@ -68,6 +68,18 @@ jobs:
         run: dotnet test AutomationFramework/AutomationFramework.csproj --no-build --verbosity normal --logger "trx;LogFileName=TestReport.trx"
 
       # ---------------------------------------------------------
+      # 🔍 DEBUG: Locate TestResults folder and contents
+      # ---------------------------------------------------------
+      - name: Locate TestResults folder
+        run: |
+          echo "Searching for TestResults folders..."
+          find . -type d -name "TestResults"
+
+          echo ""
+          echo "Listing contents of all TestResults folders..."
+          find . -type d -name "TestResults" -exec sh -c 'echo "--- {} ---"; ls -R "{}"' \;
+
+      # ---------------------------------------------------------
       # 📤 Upload TRX + ExtentReport + Screenshots + Traces
       # (Wildcard version — known to work reliably)
       # ---------------------------------------------------------
@@ -123,7 +135,6 @@ jobs:
 
       # ---------------------------------------------------------
       # 📥 Download test artifacts for zipping
-      # (Works because upload step is now reliable again)
       # ---------------------------------------------------------
       - name: Download test artifacts
         uses: actions/download-artifact@v4
@@ -152,7 +163,6 @@ jobs:
 
       # ---------------------------------------------------------
       # 🖼️ Extract ExtentReport preview (first 10 lines)
-      # (Wildcard search — always finds the report)
       # ---------------------------------------------------------
       - name: Extract ExtentReport preview
         id: preview
