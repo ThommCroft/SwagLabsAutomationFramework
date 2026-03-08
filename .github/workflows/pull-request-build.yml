@@ -153,6 +153,14 @@ jobs:
           ls -R combined-results/traces
 
       # ---------------------------------------------------------
+      # 🧪 DEBUG: Show combined-results before upload
+      # ---------------------------------------------------------
+      - name: Debug: Show combined-results before upload
+        run: |
+          echo "Combined-results folder contents:"
+          ls -R combined-results
+
+      # ---------------------------------------------------------
       # 🏷️ Determine ZIP name dynamically
       # ---------------------------------------------------------
       - name: Set ZIP name
@@ -172,7 +180,7 @@ jobs:
           zip -r "${{ steps.zipname.outputs.zip_name }}" combined-results
 
       # ---------------------------------------------------------
-      # 📤 Upload unified test results folder as the official artifact
+      # 📤 Upload unified test results artifact (Option B)
       # ---------------------------------------------------------
       - name: Upload unified test results artifact
         uses: actions/upload-artifact@v4
