@@ -4,8 +4,9 @@ name: Nightly Regression Run
 # 🕒 Nightly Schedule (MIDNIGHT)
 # ---------------------------------------------------------
 on:
+  workflow_dispatch:
   schedule:
-    - cron: "0 23 * * *"
+    - cron: "0 1 * * *"
 
 jobs:
   nightly:
