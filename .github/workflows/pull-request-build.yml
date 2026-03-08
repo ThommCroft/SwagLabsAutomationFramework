@@ -1,12 +1,8 @@
 name: PR Test Pipeline
 
-# ---------------------------------------------------------
-# 🧪 Trigger on Pull Requests + Push to Main
-# ---------------------------------------------------------
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-
   push:
     branches:
       - main
@@ -74,7 +70,6 @@ jobs:
         run: |
           echo "Searching for TestResults folders..."
           find . -type d -name "TestResults"
-
           echo ""
           echo "Listing contents of all TestResults folders..."
           find . -type d -name "TestResults" -exec sh -c 'echo "--- {} ---"; ls -R "{}"' \;
@@ -153,8 +148,8 @@ jobs:
             echo "${{ steps.flaky.outputs.flaky_tests }}"
             echo ""
             echo "### 📦 Artifacts"
-            echo "All test artifacts (TRX, ExtentReport, screenshots, traces) are available here:"
-            echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "Download all test results (ZIP, TRX, ExtentReport, screenshots, traces):"
+            echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
             echo ""
           } >> $GITHUB_STEP_SUMMARY
 
@@ -233,13 +228,13 @@ jobs:
 
             ### 📊 Dashboard
             The full HTML dashboard is available in the workflow artifacts.  
-            👉 **[Open Dashboard](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**
+            👉 **[Open Dashboard](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)**
 
             ---
 
             ### 📦 Artifacts
             **ZIP File:** `${{ steps.zipname.outputs.zip_name }}`  
-            **Download:** 👉 [View & Download Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            **Download:** 👉 [View & Download Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)
 
             Contains:
             - TRX test results  
