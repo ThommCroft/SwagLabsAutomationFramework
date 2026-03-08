@@ -86,7 +86,11 @@ jobs:
       - name: Parse TRX and build summary
         id: summary_data
         run: |
-          trx_file=$(find AutomationFramework/bin/Debug/net8.0/TestResults -name "TestReport.trx" | head -n1)
+          trx_file=$(find . -name "TestReport.trx" | head -n1)
+          if [ -z "$trx_file" ]; then
+            echo "No TestReport.trx found"
+            exit 1
+          fi
           export TRX_FILE="$trx_file"
           python .github/scripts/parse_trx.py
 
