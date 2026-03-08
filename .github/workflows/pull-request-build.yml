@@ -185,29 +185,7 @@ jobs:
           zip -r "${{ steps.zipname.outputs.zip_name }}" artifacts
 
       # ---------------------------------------------------------
-      # 🖼️ Extract ExtentReport preview (clean, no \n)
-      # ---------------------------------------------------------
-      - name: Extract ExtentReport preview
-        id: preview
-        run: |
-          report=$(find artifacts -name "ExtentReport.html" | head -n1)
-          if [ -f "$report" ]; then
-            head -n 20 "$report" > preview.html
-
-            # Escape only double quotes, preserve newlines
-            preview=$(sed 's/"/\\"/g' preview.html)
-
-            echo "preview_found=true" >> $GITHUB_OUTPUT
-            echo "preview_text<<EOF" >> $GITHUB_OUTPUT
-            echo "$preview" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          else
-            echo "preview_found=false" >> $GITHUB_OUTPUT
-            echo "preview_text=" >> $GITHUB_OUTPUT
-          fi
-
-      # ---------------------------------------------------------
-      # 📝 Post PR Comment (Improved UI + Dashboard Link + ExtentReport Preview)
+      # 📝 Post PR Comment (Improved UI + Dashboard Link)
       # ---------------------------------------------------------
       - name: Post PR comment
         uses: marocchino/sticky-pull-request-comment@v2
@@ -257,18 +235,6 @@ jobs:
 
             ---
 
-            ### 🖼️ ExtentReport Preview
-            <details>
-              <summary>Show ExtentReport preview</summary>
-
-            ```html
-            ${{ steps.preview.outputs.preview_text }}
-            ```
-
-            </details>
-
-            ---
-
             ### 📦 Artifacts
             **ZIP File:** `${{ steps.zipname.outputs.zip_name }}`  
             **Download:** 👉 [View & Download Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
@@ -282,7 +248,7 @@ jobs:
             ---
 
       # ---------------------------------------------------------
-      # 📧 Always Send Email Notification (with ZIP + preview)
+      # 📧 Always Send Email Notification (clean version)
       # ---------------------------------------------------------
       - name: Send email notification
         if: always()
@@ -308,11 +274,6 @@ jobs:
 
             <h3>Flaky Tests</h3>
             <pre>${{ steps.flaky.outputs.flaky_tests }}</pre>
-
-            <h3>ExtentReport Preview</h3>
-            ${{ steps.preview.outputs.preview_found == 'true' && '<pre>' || '<p>No preview available.</p>' }}
-            ${{ steps.preview.outputs.preview_found == 'true' && steps.preview.outputs.preview_text || '' }}
-            ${{ steps.preview.outputs.preview_found == 'true' && '</pre>' || '' }}
 
             <h3>Attachments</h3>
             <p>The ZIP file contains:</p>
