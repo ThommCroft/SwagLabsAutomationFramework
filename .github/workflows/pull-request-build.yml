@@ -142,10 +142,10 @@ jobs:
             Download the HTML dashboard from the workflow artifacts.
 
       # ---------------------------------------------------------
-      # 📧 Email Notification (Only if Failures)
+      # 📧 Always Send Email Notification (Improved Subject Line)
       # ---------------------------------------------------------
       - name: Send email notification
-        if: steps.summary_data.outputs.failed != '0'
+        if: always()
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -154,17 +154,19 @@ jobs:
           password: ${{ secrets.SMTP_PASSWORD }}
           to: ${{ secrets.EMAIL_RECIPIENTS }}
           from: "ci-bot <${{ secrets.SMTP_USERNAME }}>"
-          subject: "PR #${{ github.event.pull_request.number }} Test Failures — ${{ steps.summary_data.outputs.failed }} failed"
+          subject: >
+            PR #${{ github.event.pull_request.number }} —
+            ${{ steps.summary_data.outputs.failed != '0' && '❌ Failures Detected' || '✅ All Tests Passed' }}
           body: |
-            Pull request test run completed with failures.
+            The PR test pipeline has completed.
 
             Total: ${{ steps.summary_data.outputs.total }}
             Passed: ${{ steps.summary_data.outputs.passed }}
             Failed: ${{ steps.summary_data.outputs.failed }}
             Duration: ${{ steps.summary_data.outputs.duration }} seconds
+            Failure Rate: ${{ steps.summary_data.outputs.failure_rate }} %
 
             Flaky tests:
             ${{ steps.flaky.outputs.flaky_tests }}
 
             Dashboard and artifacts are available in GitHub Actions.
-
