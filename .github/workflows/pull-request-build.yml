@@ -75,17 +75,6 @@ jobs:
           find . -type d -name "TestResults" -exec sh -c 'echo "--- {} ---"; ls -R "{}"' \;
 
       # ---------------------------------------------------------
-      # 📤 Upload TRX + ExtentReport + Screenshots + Traces
-      # ---------------------------------------------------------
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: pr-test-results
-          path: |
-            AutomationFramework/TestResults/**
-            AutomationFramework/bin/Debug/net8.0/TestResults/**
-
-      # ---------------------------------------------------------
       # 📊 Parse TRX and Build Summary
       # ---------------------------------------------------------
       - name: Parse TRX and build summary
@@ -154,15 +143,6 @@ jobs:
           } >> $GITHUB_STEP_SUMMARY
 
       # ---------------------------------------------------------
-      # 📥 Download test artifacts for zipping
-      # ---------------------------------------------------------
-      - name: Download test artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: pr-test-results
-          path: artifacts
-
-      # ---------------------------------------------------------
       # 🗂️ Combine all test results into a single clean folder
       # ---------------------------------------------------------
       - name: Combine test results into unified folder
@@ -170,18 +150,18 @@ jobs:
           mkdir combined-results
 
           # Copy TRX files
-          find artifacts -name "*.trx" -exec cp {} combined-results/ \;
+          find AutomationFramework -name "*.trx" -exec cp {} combined-results/ \;
 
           # Copy ExtentReport
-          find artifacts -name "ExtentReport.html" -exec cp {} combined-results/ \;
+          find AutomationFramework -name "ExtentReport.html" -exec cp {} combined-results/ \;
 
           # Copy screenshots
           mkdir -p combined-results/screenshots
-          find artifacts -type f -name "*.png" -exec cp {} combined-results/screenshots/ \;
+          find AutomationFramework -type f -name "*.png" -exec cp {} combined-results/screenshots/ \;
 
           # Copy Playwright traces
           mkdir -p combined-results/traces
-          find artifacts -type f -name "*.zip" -exec cp {} combined-results/traces/ \;
+          find AutomationFramework -type f -name "*.zip" -exec cp {} combined-results/traces/ \;
 
           echo "Unified folder structure created:"
           ls -R combined-results
@@ -204,6 +184,15 @@ jobs:
       - name: Zip all test artifacts
         run: |
           zip -r "${{ steps.zipname.outputs.zip_name }}" combined-results
+
+      # ---------------------------------------------------------
+      # 📤 Upload unified ZIP as the official artifact
+      # ---------------------------------------------------------
+      - name: Upload unified test results ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.zipname.outputs.zip_name }}
+          path: ${{ steps.zipname.outputs.zip_name }}
 
       # ---------------------------------------------------------
       # 📝 Post PR Comment (Improved UI + Dashboard Link)
