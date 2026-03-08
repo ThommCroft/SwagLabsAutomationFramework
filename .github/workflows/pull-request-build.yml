@@ -130,9 +130,9 @@ jobs:
           mkdir -p combined-results/screenshots
           find AutomationFramework -type f -name "*.png" -exec cp {} combined-results/screenshots/ \;
 
-          # Copy Playwright traces
+          # Copy Playwright traces (FIX APPLIED)
           mkdir -p combined-results/traces
-          find AutomationFramework -type f -name "*.zip" -exec cp {} combined-results/traces/ \;
+          find . -type f -name "*.zip" -path "*TestResults*" -exec cp {} combined-results/traces/ \;
 
           echo "Unified folder structure created:"
           ls -R combined-results
@@ -166,7 +166,7 @@ jobs:
           path: combined-results
 
       # ---------------------------------------------------------
-      # 📝 Write Dashboard Summary to GitHub UI (correct placement)
+      # 📝 Write Dashboard Summary to GitHub UI (correct placement + FIXED LINK)
       # ---------------------------------------------------------
       - name: Write summary to GitHub
         run: |
@@ -239,7 +239,6 @@ jobs:
             ---
 
             ### 📊 Dashboard
-            The full HTML dashboard is available in the workflow artifacts.  
             👉 **[Open Dashboard](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**
 
             ---
