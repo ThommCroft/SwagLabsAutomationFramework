@@ -1,19 +1,9 @@
-name: Pull Request Build
+name: PR Test Pipeline
 
+# ---------------------------------------------------------
+# 🧪 Trigger on Pull Requests + Push to Main
+# ---------------------------------------------------------
 on:
-  workflow_call:
-    inputs:
-      build-artifact:
-        required: true
-        type: string
-    secrets:
-      SMTP_USERNAME:
-        required: true
-      SMTP_PASSWORD:
-        required: true
-      EMAIL_RECIPIENTS:
-        required: true
-        
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -30,28 +20,13 @@ jobs:
       pull-requests: write
       actions: read
 
-    # ---------------------------------------------------------
-    # 🟦 Expose artifact name to caller workflow
-    # ---------------------------------------------------------
-    outputs:
-      test-artifact-name: ${{ steps.set-artifact.outputs.test-artifact-name }}
-
     steps:
 
       # ---------------------------------------------------------
       # 📥 Checkout Repository
       # ---------------------------------------------------------
-      - name: Checkout test repository
+      - name: Checkout repository
         uses: actions/checkout@v4
-        if: ${{ github.repository != 'ThommCroft/SwagLabsAutomationFramework' }}
-        with:
-          repository: ThommCroft/SwagLabsAutomationFramework
-          ref: main
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Checkout current repository
-        uses: actions/checkout@v4
-        if: ${{ github.repository == 'ThommCroft/SwagLabsAutomationFramework' }}
 
       # ---------------------------------------------------------
       # ⚙️ Setup .NET
@@ -65,7 +40,7 @@ jobs:
       # 📦 Restore Dependencies
       # ---------------------------------------------------------
       - name: Restore dependencies
-        run: dotnet restore AutomationFramework/AutomationFramework.csproj
+        run: dotnet restore
 
       # ---------------------------------------------------------
       # 🏗️ Build Test Project
@@ -86,7 +61,7 @@ jobs:
         run: pwsh ${{ github.workspace }}/AutomationFramework/bin/Debug/net8.0/playwright.ps1 install --with-deps
 
       # ---------------------------------------------------------
-      # 🧪 Run Tests
+      # 🧪 Run Tests (Continue on Error)
       # ---------------------------------------------------------
       - name: Run Tests
         continue-on-error: true
@@ -103,31 +78,6 @@ jobs:
             **/*.trx
             **/Screenshots/**
             **/Traces/**
-
-      # ---------------------------------------------------------
-      # 🟦 DEBUG 1 — List workspace after upload
-      # ---------------------------------------------------------
-      - name: Debug — list workspace after upload
-        run: |
-          echo "=== WORKSPACE CONTENTS AFTER UPLOAD ==="
-          ls -R .
-
-      # ---------------------------------------------------------
-      # 🟦 Set output (ALWAYS)
-      # ---------------------------------------------------------
-      - name: Set artifact output
-        id: set-artifact
-        run: |
-          echo "Setting output test-artifact-name=pr-test-results"
-          echo "test-artifact-name=pr-test-results" >> $GITHUB_OUTPUT
-
-      # ---------------------------------------------------------
-      # 🟦 DEBUG 2 — Print step output
-      # ---------------------------------------------------------
-      - name: Debug — print step output
-        run: |
-          echo "=== STEP OUTPUT VALUE ==="
-          echo "Value: ${{ steps.set-artifact.outputs.test-artifact-name }}"
 
       # ---------------------------------------------------------
       # 📊 Parse TRX and Build Summary
@@ -165,14 +115,6 @@ jobs:
         run: python .github/scripts/generate_dashboard.py
 
       # ---------------------------------------------------------
-      # 🟦 DEBUG 3 — Print job-level output
-      # ---------------------------------------------------------
-      - name: Debug — print job output
-        run: |
-          echo "=== JOB OUTPUT VALUE ==="
-          echo "Value: ${{ steps.set-artifact.outputs.test-artifact-name }}"
-
-      # ---------------------------------------------------------
       # 📝 Post PR Comment
       # ---------------------------------------------------------
       - name: Post PR comment
@@ -200,10 +142,10 @@ jobs:
             Download the HTML dashboard from the workflow artifacts.
 
       # ---------------------------------------------------------
-      # 📧 Always Send Email Notification
+      # 📧 Email Notification (Only if Failures)
       # ---------------------------------------------------------
       - name: Send email notification
-        if: always()
+        if: steps.summary_data.outputs.failed != '0'
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -212,19 +154,17 @@ jobs:
           password: ${{ secrets.SMTP_PASSWORD }}
           to: ${{ secrets.EMAIL_RECIPIENTS }}
           from: "ci-bot <${{ secrets.SMTP_USERNAME }}>"
-          subject: >
-            PR #${{ github.event.pull_request.number }} —
-            ${{ steps.summary_data.outputs.failed != '0' && '❌ Failures Detected' || '✅ All Tests Passed' }}
+          subject: "PR #${{ github.event.pull_request.number }} Test Failures — ${{ steps.summary_data.outputs.failed }} failed"
           body: |
-            The PR test pipeline has completed.
+            Pull request test run completed with failures.
 
             Total: ${{ steps.summary_data.outputs.total }}
             Passed: ${{ steps.summary_data.outputs.passed }}
             Failed: ${{ steps.summary_data.outputs.failed }}
             Duration: ${{ steps.summary_data.outputs.duration }} seconds
-            Failure Rate: ${{ steps.summary_data.outputs.failure_rate }} %
 
             Flaky tests:
             ${{ steps.flaky.outputs.flaky_tests }}
 
             Dashboard and artifacts are available in GitHub Actions.
+
