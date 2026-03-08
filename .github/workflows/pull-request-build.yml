@@ -98,6 +98,22 @@ jobs:
           python .github/scripts/detect_flaky_tests.py
 
       # ---------------------------------------------------------
+      # 🧮 Compute Status Message
+      # ---------------------------------------------------------
+      - name: Compute status message
+        id: status
+        env:
+          FAILED: ${{ steps.summary_data.outputs.failed }}
+        run: |
+          if [ "$FAILED" != "0" ]; then
+            echo "msg=❌ Some tests failed" >> $GITHUB_OUTPUT
+            echo "email=❌ Failures Detected" >> $GITHUB_OUTPUT
+          else
+            echo "msg=✅ All tests passed" >> $GITHUB_OUTPUT
+            echo "email=✅ All Tests Passed" >> $GITHUB_OUTPUT
+          fi
+
+      # ---------------------------------------------------------
       # 🖥️ Generate HTML Dashboard (artifact only)
       # ---------------------------------------------------------
       - name: Generate HTML dashboard
@@ -136,8 +152,8 @@ jobs:
           mkdir -p combined-results/traces
 
           echo "Waiting for Playwright trace files..."
-          for i in {1..10}; do
-            count=$(find . -type f \( -name "trace.zip" -o -name "*trace*.zip" \) | wc -l)
+          for i in $(seq 1 10); do
+            count=$(find . -type f -name "trace.zip" -o -name "*trace*.zip" | wc -l)
             if [ "$count" -gt 0 ]; then
               echo "Found $count trace files."
               break
@@ -147,10 +163,18 @@ jobs:
           done
 
           echo "Copying trace files..."
-          find . -type f \( -name "trace.zip" -o -name "*trace*.zip" \) -exec cp {} combined-results/traces/ \;
+          find . -type f -name "trace.zip" -o -name "*trace*.zip" -exec cp {} combined-results/traces/ \;
 
           echo "Final traces copied:"
           ls -R combined-results/traces
+
+      # ---------------------------------------------------------
+      # 🧪 DEBUG: Show combined-results before upload
+      # ---------------------------------------------------------
+      - name: Debug Show combined-results before upload
+        run: |
+          echo "Combined-results folder contents:"
+          ls -R combined-results
 
       # ---------------------------------------------------------
       # 🏷️ Determine ZIP name dynamically
@@ -172,13 +196,13 @@ jobs:
           zip -r "${{ steps.zipname.outputs.zip_name }}" combined-results
 
       # ---------------------------------------------------------
-      # 📤 Upload unified test results folder as the official artifact
+      # 📤 Upload unified test results artifact
       # ---------------------------------------------------------
       - name: Upload unified test results artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.zipname.outputs.zip_name }}
-          path: combined-results
+          path: combined-results/**
 
       # ---------------------------------------------------------
       # 🔐 Make summary script executable
@@ -187,7 +211,7 @@ jobs:
         run: chmod +x .github/scripts/write_summary.sh
 
       # ---------------------------------------------------------
-      # 📝 Write Dashboard Summary to GitHub UI (via script)
+      # 📝 Write Dashboard Summary to GitHub UI
       # ---------------------------------------------------------
       - name: Write summary to GitHub
         run: .github/scripts/write_summary.sh
@@ -214,7 +238,7 @@ jobs:
           message: |
             ## 🧪 Test Results Summary
 
-            **Status:** ${{ steps.summary_data.outputs.failed != '0' && '❌ Some tests failed' || '✅ All tests passed' }}
+            **Status:** ${{ steps.status.outputs.msg }}
 
             **Total:** ${{ steps.summary_data.outputs.total }}  
             **Passed:** 🟢 ${{ steps.summary_data.outputs.passed }}  
@@ -225,7 +249,7 @@ jobs:
             ---
 
             ### ❌ Failed Tests
-            ${{ steps.summary_data.outputs.failed == '0' && '_No failed tests._' || steps.summary_data.outputs.failed_table }}
+            ${{ steps.summary_data.outputs.failed_table }}
 
             ---
 
@@ -281,7 +305,7 @@ jobs:
           from: "ci-bot <${{ secrets.SMTP_USERNAME }}>"
           subject: >
             PR #${{ github.event.pull_request.number }} —
-            ${{ steps.summary_data.outputs.failed != '0' && '❌ Failures Detected' || '✅ All Tests Passed' }}
+            ${{ steps.status.outputs.email }}
           html_body: |
             <h2>PR Test Pipeline Completed</h2>
 
