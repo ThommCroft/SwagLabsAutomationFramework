@@ -130,12 +130,9 @@ jobs:
           mkdir -p combined-results/screenshots
           find AutomationFramework -type f -name "*.png" -exec cp {} combined-results/screenshots/ \;
 
-          # Copy Playwright traces (FIX APPLIED)
+          # Copy Playwright traces
           mkdir -p combined-results/traces
           find . -type f -name "*.zip" -path "*TestResults*" -exec cp {} combined-results/traces/ \;
-
-          echo "Unified folder structure created:"
-          ls -R combined-results
 
       # ---------------------------------------------------------
       # 🏷️ Determine ZIP name dynamically
@@ -176,6 +173,18 @@ jobs:
       # ---------------------------------------------------------
       - name: Write summary to GitHub
         run: .github/scripts/write_summary.sh
+        env:
+          TOTAL: ${{ steps.summary_data.outputs.total }}
+          PASSED: ${{ steps.summary_data.outputs.passed }}
+          FAILED: ${{ steps.summary_data.outputs.failed }}
+          DURATION: ${{ steps.summary_data.outputs.duration }}
+          FAILURE_RATE: ${{ steps.summary_data.outputs.failure_rate }}
+          FAILED_TABLE: ${{ steps.summary_data.outputs.failed_table }}
+          SLOW_TESTS: ${{ steps.summary_data.outputs.slow_tests }}
+          FLAKY_TESTS: ${{ steps.flaky.outputs.flaky_tests }}
+          ZIP_NAME: ${{ steps.zipname.outputs.zip_name }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
 
       # ---------------------------------------------------------
       # 📝 Post PR Comment
