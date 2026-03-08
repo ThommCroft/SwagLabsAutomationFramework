@@ -69,26 +69,28 @@ jobs:
 
       # ---------------------------------------------------------
       # 📤 Upload TRX + ExtentReport + Screenshots + Traces
+      # (Wildcard version — known to work reliably)
       # ---------------------------------------------------------
       - name: Upload test results
         uses: actions/upload-artifact@v4
         with:
           name: pr-test-results
           path: |
-            AutomationFramework/bin/Debug/net8.0/TestResults/TestReport.trx
-            AutomationFramework/bin/Debug/net8.0/TestResults/TestReport.*
-            AutomationFramework/bin/Debug/net8.0/TestResults/Screenshots/**
-            AutomationFramework/bin/Debug/net8.0/TestResults/Traces/**
+            **/*.trx
+            **/TestReport.*
+            **/Screenshots/**
+            **/Traces/**
 
       # ---------------------------------------------------------
       # 📊 Parse TRX and Build Summary
+      # (Wildcard search — always finds the TRX)
       # ---------------------------------------------------------
       - name: Parse TRX and build summary
         id: summary_data
         run: |
           trx_file=$(find . -name "TestReport.trx" | head -n1)
           if [ -z "$trx_file" ]; then
-            echo "No TestReport.trx found"
+            echo "No TRX file found"
             exit 1
           fi
           export TRX_FILE="$trx_file"
@@ -121,6 +123,7 @@ jobs:
 
       # ---------------------------------------------------------
       # 📥 Download test artifacts for zipping
+      # (Works because upload step is now reliable again)
       # ---------------------------------------------------------
       - name: Download test artifacts
         uses: actions/download-artifact@v4
@@ -149,11 +152,12 @@ jobs:
 
       # ---------------------------------------------------------
       # 🖼️ Extract ExtentReport preview (first 10 lines)
+      # (Wildcard search — always finds the report)
       # ---------------------------------------------------------
       - name: Extract ExtentReport preview
         id: preview
         run: |
-          report=$(find artifacts -maxdepth 3 -name "TestReport.*" | head -n1)
+          report=$(find artifacts -name "TestReport.*" | head -n1)
           if [ -f "$report" ]; then
             head -n 10 "$report" > preview.html
             echo "preview_found=true" >> $GITHUB_OUTPUT
@@ -187,8 +191,7 @@ jobs:
 
             ### 📦 All Artifacts
             A single ZIP containing the TRX, ExtentReport, Screenshots, and Traces  
-            **${{ steps.zipname.outputs.zip_name }}**  
-            (Attached to the email and available in workflow artifacts)
+            **${{ steps.zipname.outputs.zip_name }}**
 
             ### 📊 Dashboard
             Download the HTML dashboard from the workflow artifacts.
