@@ -137,7 +137,9 @@ jobs:
             echo "${{ steps.flaky.outputs.flaky_tests }}"
             echo ""
             echo "### 📦 Artifacts"
-            echo "Download the unified test results package (ZIP):"
+            echo "**Unified Test Results Artifact:** \`${{ steps.zipname.outputs.zip_name }}\`"
+            echo ""
+            echo "👉 Download from the run page:"
             echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             echo ""
           } >> $GITHUB_STEP_SUMMARY
@@ -179,20 +181,20 @@ jobs:
           fi
 
       # ---------------------------------------------------------
-      # 📦 Zip entire artifacts folder
+      # 📦 Zip entire artifacts folder (for email only)
       # ---------------------------------------------------------
       - name: Zip all test artifacts
         run: |
           zip -r "${{ steps.zipname.outputs.zip_name }}" combined-results
 
       # ---------------------------------------------------------
-      # 📤 Upload unified ZIP as the official artifact
+      # 📤 Upload unified test results folder as the official artifact
       # ---------------------------------------------------------
-      - name: Upload unified test results ZIP
+      - name: Upload unified test results artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.zipname.outputs.zip_name }}
-          path: ${{ steps.zipname.outputs.zip_name }}
+          path: combined-results
 
       # ---------------------------------------------------------
       # 📝 Post PR Comment (Improved UI + Dashboard Link)
@@ -246,8 +248,8 @@ jobs:
             ---
 
             ### 📦 Artifacts
-            **ZIP File:** `${{ steps.zipname.outputs.zip_name }}`  
-            👉 **[Unified Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**
+            **Artifact Name:** `${{ steps.zipname.outputs.zip_name }}`  
+            👉 **[Download Unified Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**
 
             Contains:
             - TRX test results  
