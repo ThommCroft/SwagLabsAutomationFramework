@@ -164,7 +164,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.zipname.outputs.zip_name }}
-          path: ${{ steps.zipname.outputs.zip_name }}
+          path: combined-results
 
       # ---------------------------------------------------------
       # 🔐 Make summary script executable
