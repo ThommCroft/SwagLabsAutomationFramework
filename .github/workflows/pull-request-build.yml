@@ -68,7 +68,20 @@ jobs:
         run: dotnet test AutomationFramework/AutomationFramework.csproj --no-build --verbosity normal --logger "trx;LogFileName=TestReport.trx"
 
       # ---------------------------------------------------------
+      # 🔍 DEBUG: Locate TestResults folder and contents
+      # ---------------------------------------------------------
+      - name: Locate TestResults folder
+        run: |
+          echo "Searching for TestResults folders..."
+          find . -type d -name "TestResults"
+
+          echo ""
+          echo "Listing contents of all TestResults folders..."
+          find . -type d -name "TestResults" -exec sh -c 'echo "--- {} ---"; ls -R "{}"' \;
+
+      # ---------------------------------------------------------
       # 📤 Upload TRX + ExtentReport + Screenshots + Traces
+      # (Wildcard version — known to work reliably)
       # ---------------------------------------------------------
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -87,6 +100,10 @@ jobs:
         id: summary_data
         run: |
           trx_file=$(find . -name "TestReport.trx" | head -n1)
+          if [ -z "$trx_file" ]; then
+            echo "No TRX file found"
+            exit 1
+          fi
           export TRX_FILE="$trx_file"
           python .github/scripts/parse_trx.py
 
@@ -144,21 +161,24 @@ jobs:
           zip -r "${{ steps.zipname.outputs.zip_name }}" artifacts
 
       # ---------------------------------------------------------
-      # 🖼️ Extract ExtentReport preview (first 10 lines)
+      # 🖼️ Extract ExtentReport preview (safe, escaped)
       # ---------------------------------------------------------
       - name: Extract ExtentReport preview
         id: preview
         run: |
-          report=$(find artifacts -maxdepth 2 -name "TestReport.*" | head -n1)
+          report=$(find artifacts -name "TestReport.*" | head -n1)
           if [ -f "$report" ]; then
             head -n 10 "$report" > preview.html
+            preview=$(sed 's/"/\\"/g' preview.html | sed ':a;N;$!ba;s/\n/\\n/g')
             echo "preview_found=true" >> $GITHUB_OUTPUT
+            echo "preview_text=$preview" >> $GITHUB_OUTPUT
           else
             echo "preview_found=false" >> $GITHUB_OUTPUT
+            echo "preview_text=" >> $GITHUB_OUTPUT
           fi
 
       # ---------------------------------------------------------
-      # 📝 Post PR Comment (after ZIP exists)
+      # 📝 Post PR Comment
       # ---------------------------------------------------------
       - name: Post PR comment
         uses: marocchino/sticky-pull-request-comment@v2
@@ -183,8 +203,7 @@ jobs:
 
             ### 📦 All Artifacts
             A single ZIP containing the TRX, ExtentReport, Screenshots, and Traces  
-            **${{ steps.zipname.outputs.zip_name }}**  
-            (Attached to the email and available in workflow artifacts)
+            **${{ steps.zipname.outputs.zip_name }}**
 
             ### 📊 Dashboard
             Download the HTML dashboard from the workflow artifacts.
@@ -218,8 +237,8 @@ jobs:
             <pre>${{ steps.flaky.outputs.flaky_tests }}</pre>
 
             <h3>ExtentReport Preview</h3>
-            ${{ steps.preview.outputs.preview_found == 'true' && '<pre>' || '' }}
-            ${{ steps.preview.outputs.preview_found == 'true' && join(fromJson(steps.preview.outputs), '') || 'No preview available.' }}
+            ${{ steps.preview.outputs.preview_found == 'true' && '<pre>' || '<p>No preview available.</p>' }}
+            ${{ steps.preview.outputs.preview_found == 'true' && steps.preview.outputs.preview_text || '' }}
             ${{ steps.preview.outputs.preview_found == 'true' && '</pre>' || '' }}
 
             <h3>Attachments</h3>
