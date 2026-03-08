@@ -98,6 +98,20 @@ jobs:
           python .github/scripts/detect_flaky_tests.py
 
       # ---------------------------------------------------------
+      # 🧮 Compute Status Message (Fix for invalid expressions)
+      # ---------------------------------------------------------
+      - name: Compute status message
+        id: status
+        run: |
+          if [ "${{ steps.summary_data.outputs.failed }}" != "0" ]; then
+            echo "msg=❌ Some tests failed" >> $GITHUB_OUTPUT
+            echo "email=❌ Failures Detected" >> $GITHUB_OUTPUT
+          else
+            echo "msg=✅ All tests passed" >> $GITHUB_OUTPUT
+            echo "email=✅ All Tests Passed" >> $GITHUB_OUTPUT
+          fi
+
+      # ---------------------------------------------------------
       # 🖥️ Generate HTML Dashboard (artifact only)
       # ---------------------------------------------------------
       - name: Generate HTML dashboard
@@ -222,7 +236,7 @@ jobs:
           message: |
             ## 🧪 Test Results Summary
 
-            **Status:** ${{ steps.summary_data.outputs.failed != '0' && '❌ Some tests failed' || '✅ All tests passed' }}
+            **Status:** ${{ steps.status.outputs.msg }}
 
             **Total:** ${{ steps.summary_data.outputs.total }}  
             **Passed:** 🟢 ${{ steps.summary_data.outputs.passed }}  
@@ -233,7 +247,7 @@ jobs:
             ---
 
             ### ❌ Failed Tests
-            ${{ steps.summary_data.outputs.failed == '0' && '_No failed tests._' || steps.summary_data.outputs.failed_table }}
+            ${{ steps.summary_data.outputs.failed_table }}
 
             ---
 
@@ -289,7 +303,7 @@ jobs:
           from: "ci-bot <${{ secrets.SMTP_USERNAME }}>"
           subject: >
             PR #${{ github.event.pull_request.number }} —
-            ${{ steps.summary_data.outputs.failed != '0' && '❌ Failures Detected' || '✅ All Tests Passed' }}
+            ${{ steps.status.outputs.email }}
           html_body: |
             <h2>PR Test Pipeline Completed</h2>
 
