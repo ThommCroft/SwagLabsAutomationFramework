@@ -117,7 +117,7 @@ jobs:
           python .github/scripts/detect_flaky_tests.py
 
       # ---------------------------------------------------------
-      # 🖥️ Generate HTML Dashboard
+      # 🖥️ Generate HTML Dashboard (artifact only)
       # ---------------------------------------------------------
       - name: Generate HTML dashboard
         env:
@@ -131,6 +131,33 @@ jobs:
           NEW_VS_PREV: ${{ steps.summary_data.outputs.new_vs_prev }}
           FLAKY_TESTS: ${{ steps.flaky.outputs.flaky_tests }}
         run: python .github/scripts/generate_dashboard.py
+
+      # ---------------------------------------------------------
+      # 📝 Write Dashboard Summary to GitHub UI
+      # ---------------------------------------------------------
+      - name: Write summary to GitHub
+        run: |
+          {
+            echo "## 🧪 Test Summary"
+            echo ""
+            echo "**Total:** ${{ steps.summary_data.outputs.total }}"
+            echo "**Passed:** ${{ steps.summary_data.outputs.passed }}"
+            echo "**Failed:** ${{ steps.summary_data.outputs.failed }}"
+            echo "**Duration:** ${{ steps.summary_data.outputs.duration }} seconds"
+            echo "**Failure Rate:** ${{ steps.summary_data.outputs.failure_rate }} %"
+            echo ""
+            echo "### ❌ Failed Tests"
+            echo "${{ steps.summary_data.outputs.failed_table }}"
+            echo ""
+            echo "### 🐢 Slow Tests"
+            echo "${{ steps.summary_data.outputs.slow_tests }}"
+            echo ""
+            echo "### 🔁 Flaky Tests"
+            echo "${{ steps.flaky.outputs.flaky_tests }}"
+            echo ""
+            echo "### 📊 Dashboard File"
+            echo "The full HTML dashboard is available in the workflow artifacts."
+          } >> $GITHUB_STEP_SUMMARY
 
       # ---------------------------------------------------------
       # 📥 Download test artifacts for zipping
