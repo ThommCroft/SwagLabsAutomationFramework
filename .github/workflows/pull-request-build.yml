@@ -188,7 +188,6 @@ jobs:
 
       # ---------------------------------------------------------
       # 🖼️ Extract ExtentReport preview (safe, escaped)
-      # (ExtentReport.html ALWAYS lives in bin/Debug/net8.0/TestResults)
       # ---------------------------------------------------------
       - name: Extract ExtentReport preview
         id: preview
@@ -205,35 +204,64 @@ jobs:
           fi
 
       # ---------------------------------------------------------
-      # 📝 Post PR Comment
+      # 📝 Post PR Comment (Improved UI + Clickable Artifact Link)
       # ---------------------------------------------------------
       - name: Post PR comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           recreate: true
           message: |
-            ## 🧪 Test Results
+            ## 🧪 Test Results Summary
+
+            **Status:** ${{ steps.summary_data.outputs.failed != '0' && '❌ Some tests failed' || '✅ All tests passed' }}
+
             **Total:** ${{ steps.summary_data.outputs.total }}  
-            **Passed:** ${{ steps.summary_data.outputs.passed }}  
-            **Failed:** ${{ steps.summary_data.outputs.failed }}  
-            **Duration:** ${{ steps.summary_data.outputs.duration }} seconds  
+            **Passed:** 🟢 ${{ steps.summary_data.outputs.passed }}  
+            **Failed:** 🔴 ${{ steps.summary_data.outputs.failed }}  
+            **Duration:** ⏱️ ${{ steps.summary_data.outputs.duration }} seconds  
             **Failure Rate:** ${{ steps.summary_data.outputs.failure_rate }} %
 
-            ### ❌ Failed Tests
-            ${{ steps.summary_data.outputs.failed_table }}
+            ---
 
-            ### 🐢 Slow Tests
+            ### ❌ Failed Tests
+            ${{ steps.summary_data.outputs.failed == '0' && '_No failed tests._' || steps.summary_data.outputs.failed_table }}
+
+            ---
+
+            ### 🐢 Slowest Tests
+            <details>
+              <summary>Show slow tests</summary>
+
             ${{ steps.summary_data.outputs.slow_tests }}
 
+            </details>
+
+            ---
+
             ### 🔁 Flaky Tests
+            <details>
+              <summary>Show flaky test analysis</summary>
+
             ${{ steps.flaky.outputs.flaky_tests }}
 
-            ### 📦 All Artifacts
-            A single ZIP containing the TRX, ExtentReport, Screenshots, and Traces  
-            **${{ steps.zipname.outputs.zip_name }}**
+            </details>
+
+            ---
+
+            ### 📦 Artifacts
+            **ZIP File:** `${{ steps.zipname.outputs.zip_name }}`  
+            **Download:** 👉 [View & Download Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            Contains:
+            - TRX test results  
+            - ExtentReport HTML  
+            - Screenshots  
+            - Playwright traces  
+
+            ---
 
             ### 📊 Dashboard
-            Download the HTML dashboard from the workflow artifacts.
+            The full HTML dashboard is available in the workflow artifacts.
 
       # ---------------------------------------------------------
       # 📧 Always Send Email Notification (with ZIP + preview)
