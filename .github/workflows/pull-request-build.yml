@@ -75,10 +75,10 @@ jobs:
         with:
           name: pr-test-results
           path: |
-            **/*.trx
-            **/TestReport.*
-            **/Screenshots/**
-            **/Traces/**
+            AutomationFramework/bin/Debug/net8.0/TestResults/TestReport.trx
+            AutomationFramework/bin/Debug/net8.0/TestResults/TestReport.*
+            AutomationFramework/bin/Debug/net8.0/TestResults/Screenshots/**
+            AutomationFramework/bin/Debug/net8.0/TestResults/Traces/**
 
       # ---------------------------------------------------------
       # 📊 Parse TRX and Build Summary
@@ -86,7 +86,7 @@ jobs:
       - name: Parse TRX and build summary
         id: summary_data
         run: |
-          trx_file=$(find . -name "TestReport.trx" | head -n1)
+          trx_file=$(find AutomationFramework/bin/Debug/net8.0/TestResults -name "TestReport.trx" | head -n1)
           export TRX_FILE="$trx_file"
           python .github/scripts/parse_trx.py
 
@@ -149,7 +149,7 @@ jobs:
       - name: Extract ExtentReport preview
         id: preview
         run: |
-          report=$(find artifacts -maxdepth 2 -name "TestReport.*" | head -n1)
+          report=$(find artifacts -maxdepth 3 -name "TestReport.*" | head -n1)
           if [ -f "$report" ]; then
             head -n 10 "$report" > preview.html
             echo "preview_found=true" >> $GITHUB_OUTPUT
