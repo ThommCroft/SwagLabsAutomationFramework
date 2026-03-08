@@ -3,24 +3,24 @@
 cat <<EOF >> $GITHUB_STEP_SUMMARY
 ## 🧪 Test Summary
 
-**Total:** ${{ steps.summary_data.outputs.total }}
-**Passed:** ${{ steps.summary_data.outputs.passed }}
-**Failed:** ${{ steps.summary_data.outputs.failed }}
-**Duration:** ${{ steps.summary_data.outputs.duration }} seconds
-**Failure Rate:** ${{ steps.summary_data.outputs.failure_rate }} %
+**Total:** $TOTAL
+**Passed:** $PASSED
+**Failed:** $FAILED
+**Duration:** $DURATION seconds
+**Failure Rate:** $FAILURE_RATE %
 
 ### ❌ Failed Tests
-${{ steps.summary_data.outputs.failed_table }}
+$FAILED_TABLE
 
 ### 🐢 Slow Tests
-${{ steps.summary_data.outputs.slow_tests }}
+$SLOW_TESTS
 
 ### 🔁 Flaky Tests
-${{ steps.flaky.outputs.flaky_tests }}
+$FLAKY_TESTS
 
 ### 📦 Artifacts
-<a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts">
-  <strong>${{ steps.zipname.outputs.zip_name }}</strong>
+<a href="https://github.com/$REPOSITORY/actions/runs/$RUN_ID#artifacts">
+  <strong>$ZIP_NAME</strong>
 </a>
 
 EOF
