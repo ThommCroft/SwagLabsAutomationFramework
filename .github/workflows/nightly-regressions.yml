@@ -63,24 +63,16 @@ jobs:
         run: dotnet test AutomationFramework/AutomationFramework.csproj --no-build --verbosity normal --logger "trx;LogFileName=TestReport.trx"
 
       # ---------------------------------------------------------
-      # 📤 Upload TRX + Screenshots + Traces
-      # ---------------------------------------------------------
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: nightly-test-results
-          path: |
-            **/*.trx
-            **/Screenshots/**
-            **/Traces/**
-
-      # ---------------------------------------------------------
       # 📊 Parse TRX and Build Summary
       # ---------------------------------------------------------
       - name: Parse TRX and build summary
         id: summary_data
         run: |
-          trx_file=$(find . -name "TestReport.trx" | head -n1)
+          trx_file=$(find AutomationFramework -name "*.trx" | head -n1)
+          if [ -z "$trx_file" ]; then
+            echo "No TRX file found"
+            exit 1
+          fi
           export TRX_FILE="$trx_file"
           python .github/scripts/parse_trx.py
 
@@ -103,7 +95,7 @@ jobs:
           if [ ! -s test-flake-history.csv ]; then
             echo "run,test,outcome" > test-flake-history.csv
           fi
-          TRX_FILE_PATH=$(find . -name "TestReport.trx" | head -n1)
+          TRX_FILE_PATH=$(find AutomationFramework -name "*.trx" | head -n1)
           export TRX_FILE="$TRX_FILE_PATH"
           export RUN_NUMBER="${{ steps.summary_data.outputs.total }}"
           python .github/scripts/update_flake_history.py
@@ -142,7 +134,73 @@ jobs:
           python .github/scripts/generate_trend_graph.py
 
       # ---------------------------------------------------------
-      # 📤 Upload Nightly Artifacts
+      # 🗂️ Combine all test results into unified folder
+      # ---------------------------------------------------------
+      - name: "Combine test results into unified folder"
+        run: |
+          mkdir combined-results
+
+          # Copy TRX files
+          find AutomationFramework -name "*.trx" -exec cp {} combined-results/ \;
+
+          # Copy ExtentReport
+          find AutomationFramework -name "ExtentReport.html" -exec cp {} combined-results/ \;
+
+          # Copy screenshots
+          mkdir -p combined-results/screenshots
+          find AutomationFramework -type f -name "*.png" -exec cp {} combined-results/screenshots/ \;
+
+          # Copy traces (retry loop)
+          mkdir -p combined-results/traces
+
+          echo "Waiting for Playwright trace files..."
+          for i in $(seq 1 10); do
+            count=$(find . -type f -name "trace.zip" -o -name "*trace*.zip" | wc -l)
+            if [ "$count" -gt 0 ]; then
+              echo "Found $count trace files."
+              break
+            fi
+            echo "No traces yet... retrying ($i/10)"
+            sleep 1
+          done
+
+          echo "Copying trace files..."
+          find . -type f -name "trace.zip" -o -name "*trace*.zip" -exec cp {} combined-results/traces/ \;
+
+      # ---------------------------------------------------------
+      # 🧪 DEBUG: Show combined-results before upload
+      # ---------------------------------------------------------
+      - name: "Debug: Show combined-results before upload"
+        run: |
+          echo "Combined-results folder contents:"
+          ls -R combined-results
+
+      # ---------------------------------------------------------
+      # 🏷️ Determine ZIP name dynamically
+      # ---------------------------------------------------------
+      - name: Set ZIP name
+        id: zipname
+        run: |
+          echo "zip_name=nightly-artifacts.zip" >> $GITHUB_OUTPUT
+
+      # ---------------------------------------------------------
+      # 📦 Zip entire artifacts folder
+      # ---------------------------------------------------------
+      - name: Zip all test artifacts
+        run: |
+          zip -r "${{ steps.zipname.outputs.zip_name }}" combined-results
+
+      # ---------------------------------------------------------
+      # 📤 Upload unified nightly ZIP artifact
+      # ---------------------------------------------------------
+      - name: Upload nightly ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-artifacts-zip
+          path: ${{ steps.zipname.outputs.zip_name }}
+
+      # ---------------------------------------------------------
+      # 📤 Upload nightly dashboard + graphs + history
       # ---------------------------------------------------------
       - name: Upload nightly artifacts
         uses: actions/upload-artifact@v4
@@ -170,6 +228,8 @@ jobs:
           subject: >
             Nightly Regression —
             ${{ steps.summary_data.outputs.failed != '0' && '❌ Failures Detected' || '✅ All Tests Passed' }}
+          attachments: |
+            ${{ steps.zipname.outputs.zip_name }}
           body: |
             The nightly regression run has completed.
 
