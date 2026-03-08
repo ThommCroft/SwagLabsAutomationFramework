@@ -166,32 +166,10 @@ jobs:
           path: combined-results
 
       # ---------------------------------------------------------
-      # 📝 Write Dashboard Summary to GitHub UI (correct placement + FIXED LINK)
+      # 📝 Write Dashboard Summary to GitHub UI
       # ---------------------------------------------------------
       - name: Write summary to GitHub
-        run: |
-          {
-            echo "## 🧪 Test Summary"
-            echo ""
-            echo "**Total:** \${{ steps.summary_data.outputs.total }}"
-            echo "**Passed:** \${{ steps.summary_data.outputs.passed }}"
-            echo "**Failed:** \${{ steps.summary_data.outputs.failed }}"
-            echo "**Duration:** \${{ steps.summary_data.outputs.duration }} seconds"
-            echo "**Failure Rate:** \${{ steps.summary_data.outputs.failure_rate }} %"
-            echo ""
-            echo "### ❌ Failed Tests"
-            echo "\${{ steps.summary_data.outputs.failed_table }}"
-            echo ""
-            echo "### 🐢 Slow Tests"
-            echo "\${{ steps.summary_data.outputs.slow_tests }}"
-            echo ""
-            echo "### 🔁 Flaky Tests"
-            echo "\${{ steps.flaky.outputs.flaky_tests }}"
-            echo ""
-            echo "### 📦 Artifacts"
-            echo "<a href=\"https://github.com/\${{ github.repository }}/actions/runs/\${{ github.run_id }}#artifacts\"><strong>\${{ steps.zipname.outputs.zip_name }}</strong></a>"
-            echo ""
-          } >> $GITHUB_STEP_SUMMARY
+        run: .github/scripts/write_summary.sh
 
       # ---------------------------------------------------------
       # 📝 Post PR Comment
