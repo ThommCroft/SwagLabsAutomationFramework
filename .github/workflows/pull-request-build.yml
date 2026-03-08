@@ -1,12 +1,8 @@
 name: PR Test Pipeline
 
-# ---------------------------------------------------------
-# 🧪 Trigger on Pull Requests + Push to Main
-# ---------------------------------------------------------
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-
   push:
     branches:
       - main
@@ -74,14 +70,12 @@ jobs:
         run: |
           echo "Searching for TestResults folders..."
           find . -type d -name "TestResults"
-
           echo ""
           echo "Listing contents of all TestResults folders..."
           find . -type d -name "TestResults" -exec sh -c 'echo "--- {} ---"; ls -R "{}"' \;
 
       # ---------------------------------------------------------
       # 📤 Upload TRX + ExtentReport + Screenshots + Traces
-      # (Now using precise paths discovered from debug output)
       # ---------------------------------------------------------
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -93,7 +87,6 @@ jobs:
 
       # ---------------------------------------------------------
       # 📊 Parse TRX and Build Summary
-      # (TRX is ALWAYS in AutomationFramework/TestResults)
       # ---------------------------------------------------------
       - name: Parse TRX and build summary
         id: summary_data
@@ -154,8 +147,10 @@ jobs:
             echo "### 🔁 Flaky Tests"
             echo "${{ steps.flaky.outputs.flaky_tests }}"
             echo ""
-            echo "### 📊 Dashboard File"
-            echo "The full HTML dashboard is available in the workflow artifacts."
+            echo "### 📦 Artifacts"
+            echo "Download all test results (ZIP, TRX, ExtentReport, screenshots, traces):"
+            echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
+            echo ""
           } >> $GITHUB_STEP_SUMMARY
 
       # ---------------------------------------------------------
@@ -187,56 +182,70 @@ jobs:
           zip -r "${{ steps.zipname.outputs.zip_name }}" artifacts
 
       # ---------------------------------------------------------
-      # 🖼️ Extract ExtentReport preview (safe, escaped)
-      # (ExtentReport.html ALWAYS lives in bin/Debug/net8.0/TestResults)
-      # ---------------------------------------------------------
-      - name: Extract ExtentReport preview
-        id: preview
-        run: |
-          report=$(find artifacts -name "ExtentReport.html" | head -n1)
-          if [ -f "$report" ]; then
-            head -n 10 "$report" > preview.html
-            preview=$(sed 's/"/\\"/g' preview.html | sed ':a;N;$!ba;s/\n/\\n/g')
-            echo "preview_found=true" >> $GITHUB_OUTPUT
-            echo "preview_text=$preview" >> $GITHUB_OUTPUT
-          else
-            echo "preview_found=false" >> $GITHUB_OUTPUT
-            echo "preview_text=" >> $GITHUB_OUTPUT
-          fi
-
-      # ---------------------------------------------------------
-      # 📝 Post PR Comment
+      # 📝 Post PR Comment (Improved UI + Dashboard Link)
       # ---------------------------------------------------------
       - name: Post PR comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           recreate: true
           message: |
-            ## 🧪 Test Results
+            ## 🧪 Test Results Summary
+
+            **Status:** ${{ steps.summary_data.outputs.failed != '0' && '❌ Some tests failed' || '✅ All tests passed' }}
+
             **Total:** ${{ steps.summary_data.outputs.total }}  
-            **Passed:** ${{ steps.summary_data.outputs.passed }}  
-            **Failed:** ${{ steps.summary_data.outputs.failed }}  
-            **Duration:** ${{ steps.summary_data.outputs.duration }} seconds  
+            **Passed:** 🟢 ${{ steps.summary_data.outputs.passed }}  
+            **Failed:** 🔴 ${{ steps.summary_data.outputs.failed }}  
+            **Duration:** ⏱️ ${{ steps.summary_data.outputs.duration }} seconds  
             **Failure Rate:** ${{ steps.summary_data.outputs.failure_rate }} %
 
-            ### ❌ Failed Tests
-            ${{ steps.summary_data.outputs.failed_table }}
+            ---
 
-            ### 🐢 Slow Tests
+            ### ❌ Failed Tests
+            ${{ steps.summary_data.outputs.failed == '0' && '_No failed tests._' || steps.summary_data.outputs.failed_table }}
+
+            ---
+
+            ### 🐢 Slowest Tests
+            <details>
+              <summary>Show slow tests</summary>
+
             ${{ steps.summary_data.outputs.slow_tests }}
 
+            </details>
+
+            ---
+
             ### 🔁 Flaky Tests
+            <details>
+              <summary>Show flaky test analysis</summary>
+
             ${{ steps.flaky.outputs.flaky_tests }}
 
-            ### 📦 All Artifacts
-            A single ZIP containing the TRX, ExtentReport, Screenshots, and Traces  
-            **${{ steps.zipname.outputs.zip_name }}**
+            </details>
+
+            ---
 
             ### 📊 Dashboard
-            Download the HTML dashboard from the workflow artifacts.
+            The full HTML dashboard is available in the workflow artifacts.  
+            👉 **[Open Dashboard](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)**
+
+            ---
+
+            ### 📦 Artifacts
+            **ZIP File:** `${{ steps.zipname.outputs.zip_name }}`  
+            **Download:** 👉 [View & Download Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)
+
+            Contains:
+            - TRX test results  
+            - ExtentReport HTML  
+            - Screenshots  
+            - Playwright traces  
+
+            ---
 
       # ---------------------------------------------------------
-      # 📧 Always Send Email Notification (with ZIP + preview)
+      # 📧 Always Send Email Notification (clean version)
       # ---------------------------------------------------------
       - name: Send email notification
         if: always()
@@ -262,11 +271,6 @@ jobs:
 
             <h3>Flaky Tests</h3>
             <pre>${{ steps.flaky.outputs.flaky_tests }}</pre>
-
-            <h3>ExtentReport Preview</h3>
-            ${{ steps.preview.outputs.preview_found == 'true' && '<pre>' || '<p>No preview available.</p>' }}
-            ${{ steps.preview.outputs.preview_found == 'true' && steps.preview.outputs.preview_text || '' }}
-            ${{ steps.preview.outputs.preview_found == 'true' && '</pre>' || '' }}
 
             <h3>Attachments</h3>
             <p>The ZIP file contains:</p>
