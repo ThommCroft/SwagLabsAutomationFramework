@@ -114,9 +114,9 @@ jobs:
         run: python .github/scripts/generate_dashboard.py
 
       # ---------------------------------------------------------
-      # 🗂️ Combine all test results into a single clean folder
+      # 🗂️ STEP A — Build combined-results folder (no traces yet)
       # ---------------------------------------------------------
-      - name: Combine test results into unified folder
+      - name: Build combined-results folder
         run: |
           mkdir combined-results
 
@@ -130,9 +130,24 @@ jobs:
           mkdir -p combined-results/screenshots
           find AutomationFramework -type f -name "*.png" -exec cp {} combined-results/screenshots/ \;
 
-          # Copy Playwright traces
+      # ---------------------------------------------------------
+      # 🗂️ STEP B — Copy Playwright traces (isolated, deterministic)
+      # ---------------------------------------------------------
+      - name: Copy Playwright traces
+        run: |
           mkdir -p combined-results/traces
           find . -type f -name "*.zip" -path "*TestResults*" -exec cp {} combined-results/traces/ \;
+
+          echo "Traces copied:"
+          ls -R combined-results/traces
+
+      # ---------------------------------------------------------
+      # 🧪 STEP C — Debug before upload (ensures traces exist)
+      # ---------------------------------------------------------
+      - name: Debug combined-results before upload
+        run: |
+          echo "Final combined-results folder before upload:"
+          ls -R combined-results
 
       # ---------------------------------------------------------
       # 🏷️ Determine ZIP name dynamically
@@ -154,7 +169,7 @@ jobs:
           zip -r "${{ steps.zipname.outputs.zip_name }}" combined-results
 
       # ---------------------------------------------------------
-      # 📤 Upload unified test results folder as the official artifact
+      # 📤 STEP D — Upload unified test results artifact
       # ---------------------------------------------------------
       - name: Upload unified test results artifact
         uses: actions/upload-artifact@v4
