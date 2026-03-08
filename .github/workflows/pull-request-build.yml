@@ -166,7 +166,13 @@ jobs:
           path: combined-results
 
       # ---------------------------------------------------------
-      # 📝 Write Dashboard Summary to GitHub UI
+      # 🔐 Make summary script executable
+      # ---------------------------------------------------------
+      - name: Make summary script executable
+        run: chmod +x .github/scripts/write_summary.sh
+
+      # ---------------------------------------------------------
+      # 📝 Write Dashboard Summary to GitHub UI (via script)
       # ---------------------------------------------------------
       - name: Write summary to GitHub
         run: .github/scripts/write_summary.sh
