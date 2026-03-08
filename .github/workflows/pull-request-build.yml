@@ -136,7 +136,7 @@ jobs:
           mkdir -p combined-results/traces
 
           echo "Waiting for Playwright trace files..."
-          for i in {1..10}; do
+          for i in $(seq 1 10); do
             count=$(find . -type f \( -name "trace.zip" -o -name "*trace*.zip" \) | wc -l)
             if [ "$count" -gt 0 ]; then
               echo "Found $count trace files."
