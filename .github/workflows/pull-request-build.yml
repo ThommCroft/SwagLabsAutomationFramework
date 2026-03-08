@@ -203,8 +203,8 @@ jobs:
             echo "preview_text=" >> $GITHUB_OUTPUT
           fi
 
-      # ---------------------------------------------------------
-      # 📝 Post PR Comment (Improved UI + Clickable Artifact Link)
+            # ---------------------------------------------------------
+      # 📝 Post PR Comment (Improved UI + Dashboard Link + ExtentReport Preview)
       # ---------------------------------------------------------
       - name: Post PR comment
         uses: marocchino/sticky-pull-request-comment@v2
@@ -248,6 +248,24 @@ jobs:
 
             ---
 
+            ### 📊 Dashboard
+            The full HTML dashboard is available in the workflow artifacts.  
+            👉 **[Open Dashboard](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**
+
+            ---
+
+            ### 🖼️ ExtentReport Preview
+            <details>
+              <summary>Show ExtentReport preview</summary>
+
+            ${{ steps.preview.outputs.preview_found == 'true' && '```html' || '_No preview available._' }}
+            ${{ steps.preview.outputs.preview_found == 'true' && steps.preview.outputs.preview_text || '' }}
+            ${{ steps.preview.outputs.preview_found == 'true' && '```' || '' }}
+
+            </details>
+
+            ---
+
             ### 📦 Artifacts
             **ZIP File:** `${{ steps.zipname.outputs.zip_name }}`  
             **Download:** 👉 [View & Download Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
@@ -259,9 +277,6 @@ jobs:
             - Playwright traces  
 
             ---
-
-            ### 📊 Dashboard
-            The full HTML dashboard is available in the workflow artifacts.
 
       # ---------------------------------------------------------
       # 📧 Always Send Email Notification (with ZIP + preview)
