@@ -81,7 +81,6 @@ jobs:
 
       # ---------------------------------------------------------
       # 📤 Upload TRX + ExtentReport + Screenshots + Traces
-      # (Now using precise paths discovered from debug output)
       # ---------------------------------------------------------
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -93,7 +92,6 @@ jobs:
 
       # ---------------------------------------------------------
       # 📊 Parse TRX and Build Summary
-      # (TRX is ALWAYS in AutomationFramework/TestResults)
       # ---------------------------------------------------------
       - name: Parse TRX and build summary
         id: summary_data
@@ -187,23 +185,28 @@ jobs:
           zip -r "${{ steps.zipname.outputs.zip_name }}" artifacts
 
       # ---------------------------------------------------------
-      # 🖼️ Extract ExtentReport preview (safe, escaped)
+      # 🖼️ Extract ExtentReport preview (clean, no \n)
       # ---------------------------------------------------------
       - name: Extract ExtentReport preview
         id: preview
         run: |
           report=$(find artifacts -name "ExtentReport.html" | head -n1)
           if [ -f "$report" ]; then
-            head -n 10 "$report" > preview.html
-            preview=$(sed 's/"/\\"/g' preview.html | sed ':a;N;$!ba;s/\n/\\n/g')
+            head -n 20 "$report" > preview.html
+
+            # Escape only double quotes, preserve newlines
+            preview=$(sed 's/"/\\"/g' preview.html)
+
             echo "preview_found=true" >> $GITHUB_OUTPUT
-            echo "preview_text=$preview" >> $GITHUB_OUTPUT
+            echo "preview_text<<EOF" >> $GITHUB_OUTPUT
+            echo "$preview" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "preview_found=false" >> $GITHUB_OUTPUT
             echo "preview_text=" >> $GITHUB_OUTPUT
           fi
 
-            # ---------------------------------------------------------
+      # ---------------------------------------------------------
       # 📝 Post PR Comment (Improved UI + Dashboard Link + ExtentReport Preview)
       # ---------------------------------------------------------
       - name: Post PR comment
@@ -258,9 +261,9 @@ jobs:
             <details>
               <summary>Show ExtentReport preview</summary>
 
-            ${{ steps.preview.outputs.preview_found == 'true' && '```html' || '_No preview available._' }}
-            ${{ steps.preview.outputs.preview_found == 'true' && steps.preview.outputs.preview_text || '' }}
-            ${{ steps.preview.outputs.preview_found == 'true' && '```' || '' }}
+            ```html
+            ${{ steps.preview.outputs.preview_text }}
+            ```
 
             </details>
 
