@@ -98,7 +98,7 @@ jobs:
           python .github/scripts/detect_flaky_tests.py
 
       # ---------------------------------------------------------
-      # 🧮 Compute Status Message (Fix for invalid expressions)
+      # 🧮 Compute Status Message
       # ---------------------------------------------------------
       - name: Compute status message
         id: status
@@ -153,7 +153,7 @@ jobs:
 
           echo "Waiting for Playwright trace files..."
           for i in $(seq 1 10); do
-            count=$(find . -type f \( -name "trace.zip" -o -name "*trace*.zip" \) | wc -l)
+            count=$(find . -type f '(' -name "trace.zip" -o -name "*trace*.zip" ')' | wc -l)
             if [ "$count" -gt 0 ]; then
               echo "Found $count trace files."
               break
@@ -163,7 +163,7 @@ jobs:
           done
 
           echo "Copying trace files..."
-          find . -type f \( -name "trace.zip" -o -name "*trace*.zip" \) -exec cp {} combined-results/traces/ \;
+          find . -type f '(' -name "trace.zip" -o -name "*trace*.zip" ')' -exec cp {} combined-results/traces/ \;
 
           echo "Final traces copied:"
           ls -R combined-results/traces
@@ -196,7 +196,7 @@ jobs:
           zip -r "${{ steps.zipname.outputs.zip_name }}" combined-results
 
       # ---------------------------------------------------------
-      # 📤 Upload unified test results artifact (Option B)
+      # 📤 Upload unified test results artifact
       # ---------------------------------------------------------
       - name: Upload unified test results artifact
         uses: actions/upload-artifact@v4
@@ -211,7 +211,7 @@ jobs:
         run: chmod +x .github/scripts/write_summary.sh
 
       # ---------------------------------------------------------
-      # 📝 Write Dashboard Summary to GitHub UI (via script)
+      # 📝 Write Dashboard Summary to GitHub UI
       # ---------------------------------------------------------
       - name: Write summary to GitHub
         run: .github/scripts/write_summary.sh
