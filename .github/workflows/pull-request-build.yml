@@ -152,8 +152,10 @@ jobs:
             echo "### 🔁 Flaky Tests"
             echo "${{ steps.flaky.outputs.flaky_tests }}"
             echo ""
-            echo "### 📊 Dashboard File"
-            echo "The full HTML dashboard is available in the workflow artifacts."
+            echo "### 📦 Artifacts"
+            echo "All test artifacts (TRX, ExtentReport, screenshots, traces) are available here:"
+            echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo ""
           } >> $GITHUB_STEP_SUMMARY
 
       # ---------------------------------------------------------
