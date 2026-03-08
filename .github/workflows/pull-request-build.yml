@@ -102,8 +102,10 @@ jobs:
       # ---------------------------------------------------------
       - name: Compute status message
         id: status
+        env:
+          FAILED: ${{ steps.summary_data.outputs.failed }}
         run: |
-          if [ "${{ steps.summary_data.outputs.failed }}" != "0" ]; then
+          if [ "$FAILED" != "0" ]; then
             echo "msg=❌ Some tests failed" >> $GITHUB_OUTPUT
             echo "email=❌ Failures Detected" >> $GITHUB_OUTPUT
           else
