@@ -81,25 +81,24 @@ jobs:
 
       # ---------------------------------------------------------
       # 📤 Upload TRX + ExtentReport + Screenshots + Traces
-      # (Wildcard version — known to work reliably)
+      # (Now using precise paths discovered from debug output)
       # ---------------------------------------------------------
       - name: Upload test results
         uses: actions/upload-artifact@v4
         with:
           name: pr-test-results
           path: |
-            **/*.trx
-            **/TestReport.*
-            **/Screenshots/**
-            **/Traces/**
+            AutomationFramework/TestResults/**
+            AutomationFramework/bin/Debug/net8.0/TestResults/**
 
       # ---------------------------------------------------------
       # 📊 Parse TRX and Build Summary
+      # (TRX is ALWAYS in AutomationFramework/TestResults)
       # ---------------------------------------------------------
       - name: Parse TRX and build summary
         id: summary_data
         run: |
-          trx_file=$(find . -name "TestReport.trx" | head -n1)
+          trx_file=$(find AutomationFramework/TestResults -name "*.trx" | head -n1)
           if [ -z "$trx_file" ]; then
             echo "No TRX file found"
             exit 1
@@ -189,11 +188,12 @@ jobs:
 
       # ---------------------------------------------------------
       # 🖼️ Extract ExtentReport preview (safe, escaped)
+      # (ExtentReport.html ALWAYS lives in bin/Debug/net8.0/TestResults)
       # ---------------------------------------------------------
       - name: Extract ExtentReport preview
         id: preview
         run: |
-          report=$(find artifacts -name "TestReport.*" | head -n1)
+          report=$(find artifacts -name "ExtentReport.html" | head -n1)
           if [ -f "$report" ]; then
             head -n 10 "$report" > preview.html
             preview=$(sed 's/"/\\"/g' preview.html | sed ':a;N;$!ba;s/\n/\\n/g')
@@ -272,7 +272,7 @@ jobs:
             <p>The ZIP file contains:</p>
             <ul>
               <li>TestReport.trx</li>
-              <li>ExtentReport (TestReport.html)</li>
+              <li>ExtentReport.html</li>
               <li>Screenshots</li>
               <li>Traces</li>
             </ul>
