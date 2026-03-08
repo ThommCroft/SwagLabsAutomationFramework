@@ -114,37 +114,6 @@ jobs:
         run: python .github/scripts/generate_dashboard.py
 
       # ---------------------------------------------------------
-      # 📝 Write Dashboard Summary to GitHub UI
-      # ---------------------------------------------------------
-      - name: Write summary to GitHub
-        run: |
-          {
-            echo "## 🧪 Test Summary"
-            echo ""
-            echo "**Total:** ${{ steps.summary_data.outputs.total }}"
-            echo "**Passed:** ${{ steps.summary_data.outputs.passed }}"
-            echo "**Failed:** ${{ steps.summary_data.outputs.failed }}"
-            echo "**Duration:** ${{ steps.summary_data.outputs.duration }} seconds"
-            echo "**Failure Rate:** ${{ steps.summary_data.outputs.failure_rate }} %"
-            echo ""
-            echo "### ❌ Failed Tests"
-            echo "${{ steps.summary_data.outputs.failed_table }}"
-            echo ""
-            echo "### 🐢 Slow Tests"
-            echo "${{ steps.summary_data.outputs.slow_tests }}"
-            echo ""
-            echo "### 🔁 Flaky Tests"
-            echo "${{ steps.flaky.outputs.flaky_tests }}"
-            echo ""
-            echo "### 📦 Artifacts"
-            echo "**Unified Test Results Artifact:** \`${{ steps.zipname.outputs.zip_name }}\`"
-            echo ""
-            echo "👉 Download from the run page:"
-            echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            echo ""
-          } >> $GITHUB_STEP_SUMMARY
-
-      # ---------------------------------------------------------
       # 🗂️ Combine all test results into a single clean folder
       # ---------------------------------------------------------
       - name: Combine test results into unified folder
@@ -197,7 +166,35 @@ jobs:
           path: combined-results
 
       # ---------------------------------------------------------
-      # 📝 Post PR Comment (Improved UI + Dashboard Link)
+      # 📝 Write Dashboard Summary to GitHub UI (correct placement)
+      # ---------------------------------------------------------
+      - name: Write summary to GitHub
+        run: |
+          {
+            echo "## 🧪 Test Summary"
+            echo ""
+            echo "**Total:** \${{ steps.summary_data.outputs.total }}"
+            echo "**Passed:** \${{ steps.summary_data.outputs.passed }}"
+            echo "**Failed:** \${{ steps.summary_data.outputs.failed }}"
+            echo "**Duration:** \${{ steps.summary_data.outputs.duration }} seconds"
+            echo "**Failure Rate:** \${{ steps.summary_data.outputs.failure_rate }} %"
+            echo ""
+            echo "### ❌ Failed Tests"
+            echo "\${{ steps.summary_data.outputs.failed_table }}"
+            echo ""
+            echo "### 🐢 Slow Tests"
+            echo "\${{ steps.summary_data.outputs.slow_tests }}"
+            echo ""
+            echo "### 🔁 Flaky Tests"
+            echo "\${{ steps.flaky.outputs.flaky_tests }}"
+            echo ""
+            echo "### 📦 Artifacts"
+            echo "[**\${{ steps.zipname.outputs.zip_name }}**](https://github.com/\${{ github.repository }}/actions/runs/\${{ github.run_id }}#artifacts)"
+            echo ""
+          } >> $GITHUB_STEP_SUMMARY
+
+      # ---------------------------------------------------------
+      # 📝 Post PR Comment
       # ---------------------------------------------------------
       - name: Post PR comment
         uses: marocchino/sticky-pull-request-comment@v2
@@ -249,7 +246,7 @@ jobs:
 
             ### 📦 Artifacts
             **Artifact Name:** `${{ steps.zipname.outputs.zip_name }}`  
-            👉 **[Download Unified Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**
+            👉 **[Download Unified Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)**
 
             Contains:
             - TRX test results  
@@ -260,7 +257,7 @@ jobs:
             ---
 
       # ---------------------------------------------------------
-      # 📧 Always Send Email Notification (clean version)
+      # 📧 Always Send Email Notification
       # ---------------------------------------------------------
       - name: Send email notification
         if: always()
