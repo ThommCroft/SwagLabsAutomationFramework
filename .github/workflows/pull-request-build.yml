@@ -130,10 +130,24 @@ jobs:
           mkdir -p combined-results/screenshots
           find AutomationFramework -type f -name "*.png" -exec cp {} combined-results/screenshots/ \;
 
-          # Copy Playwright traces (robust matching)
+          # -----------------------------------------------------
+          # 🥇 Bulletproof Playwright Trace Capture (Version B)
+          # -----------------------------------------------------
           mkdir -p combined-results/traces
-          echo "Searching for Playwright trace files..."
-          find . -type f \( -name "trace.zip" -o -name "*trace*.zip" \) -print -exec cp {} combined-results/traces/ \;
+
+          echo "Waiting for Playwright trace files..."
+          for i in {1..10}; do
+            count=$(find . -type f \( -name "trace.zip" -o -name "*trace*.zip" \) | wc -l)
+            if [ "$count" -gt 0 ]; then
+              echo "Found $count trace files."
+              break
+            fi
+            echo "No traces yet... retrying ($i/10)"
+            sleep 1
+          done
+
+          echo "Copying trace files..."
+          find . -type f \( -name "trace.zip" -o -name "*trace*.zip" \) -exec cp {} combined-results/traces/ \;
 
           echo "Final traces copied:"
           ls -R combined-results/traces
