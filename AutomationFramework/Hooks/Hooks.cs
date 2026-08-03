@@ -48,17 +48,17 @@ namespace AutomationFramework.Hooks
             _browserContext = _playwrightDriverConfiguration.BrowserContext;
             _page = _playwrightDriverConfiguration.Page;
 
-            _scenarioContext.Set<string>(data: _playwrightDriverConfiguration.CurrentURL, key: "CurrentURL");
+            _scenarioContext.Set<string>(data: _playwrightDriverConfiguration.CurrentURL!, key: "CurrentURL");
 
-            await _browserContext.Tracing.StartAsync(new TracingStartOptions
+            await _browserContext!.Tracing.StartAsync(new TracingStartOptions
             {
                 Screenshots = true,
                 Snapshots = true,
                 Sources = true
             });
 
-            ExtentReporting.GetBrowserInfo(_browser.BrowserType.Name);
-            ExtentReporting.GetEnvironmentURLInfo(_playwrightDriverConfiguration.CurrentURL);
+            ExtentReporting.GetBrowserInfo(_browser!.BrowserType.Name);
+            ExtentReporting.GetEnvironmentURLInfo(_playwrightDriverConfiguration.CurrentURL!);
             ExtentReporting.CreateFeatureAndScenarioNodes(_featureContext, _scenarioContext);
         }
 
@@ -86,7 +86,7 @@ namespace AutomationFramework.Hooks
                 var fileName = $"{_scenarioContext.ScenarioInfo.Title}_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
                 var tracePath = Path.Combine(tracesDir, fileName);
 
-                await _browserContext.Tracing.StopAsync(new()
+                await _browserContext!.Tracing.StopAsync(new()
                 {
                     Path = tracePath
                 });
@@ -96,12 +96,12 @@ namespace AutomationFramework.Hooks
             else
             {
                 // Stop without saving
-                await _browserContext.Tracing.StopAsync();
+                await _browserContext!.Tracing.StopAsync();
             }
 
-            await _playwrightDriverConfiguration.BrowserContext.CloseAsync();
-            await _playwrightDriverConfiguration.Browser.CloseAsync();
-            _playwrightDriverConfiguration.PlaywrightDriver?.Dispose();
+            await _playwrightDriverConfiguration.BrowserContext!.CloseAsync();
+            await _playwrightDriverConfiguration.Browser!.CloseAsync();
+            _playwrightDriverConfiguration.PlaywrightDriver!.Dispose();
         }
 
         [AfterTestRun]

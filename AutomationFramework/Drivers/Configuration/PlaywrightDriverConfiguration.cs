@@ -47,7 +47,7 @@ namespace AutomationFramework.Drivers.Configuration
             var safeFileName = $"{fileName}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
             var path = Path.Combine(screenshotsDir, safeFileName);
 
-            await Page.ScreenshotAsync(new PageScreenshotOptions
+            await Page!.ScreenshotAsync(new PageScreenshotOptions
             {
                 Path = path,
                 FullPage = true
@@ -91,9 +91,9 @@ namespace AutomationFramework.Drivers.Configuration
 
             return testEnvironment switch
             {
-                TestEnvironmentType.PREPROD => testEnvironmentURL.PreProdURL,
-                TestEnvironmentType.UAT => testEnvironmentURL.UATURL,
-                TestEnvironmentType.QA => testEnvironmentURL.QAURL,
+                TestEnvironmentType.PREPROD => testEnvironmentURL.PreProdURL!,
+                TestEnvironmentType.UAT => testEnvironmentURL.UATURL!,
+                TestEnvironmentType.QA => testEnvironmentURL.QAURL!,
                 _ => throw new ArgumentOutOfRangeException(),
             };
         }
