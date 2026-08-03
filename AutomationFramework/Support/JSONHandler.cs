@@ -19,7 +19,7 @@ namespace AutomationFramework.Support
 
             jsonSerialiserSettings.Converters.Add(new JsonStringEnumConverter());
 
-            return JsonSerializer.Deserialize<TestEnvironmentURL>(configFile, jsonSerialiserSettings);
+            return JsonSerializer.Deserialize<TestEnvironmentURL>(configFile, jsonSerialiserSettings)!;
         }
     }
 }

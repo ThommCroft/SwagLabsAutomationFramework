@@ -80,13 +80,13 @@ namespace AutomationFramework.Drivers.Configuration
             switch (scenarioContext.StepContext.StepInfo.StepDefinitionType)
             {
                 case Reqnroll.Bindings.StepDefinitionType.Given:
-                    _scenario.CreateNode<Given>(scenarioContext.StepContext.StepInfo.Text);
+                    _scenario!.CreateNode<Given>(scenarioContext.StepContext.StepInfo.Text);
                     break;
                 case Reqnroll.Bindings.StepDefinitionType.When:
-                    _scenario.CreateNode<When>(scenarioContext.StepContext.StepInfo.Text);
+                    _scenario!.CreateNode<When>(scenarioContext.StepContext.StepInfo.Text);
                     break;
                 case Reqnroll.Bindings.StepDefinitionType.Then:
-                    _scenario.CreateNode<Then>(scenarioContext.StepContext.StepInfo.Text);
+                    _scenario!.CreateNode<Then>(scenarioContext.StepContext.StepInfo.Text);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -102,15 +102,15 @@ namespace AutomationFramework.Drivers.Configuration
             {
                 case Reqnroll.Bindings.StepDefinitionType.Given:
                     screenshotPath = await playwrightDriverConfiguration.TakeScreenshotAsPathAsync(fileName);
-                    _scenario.CreateNode<Given>(scenarioContext.StepContext.StepInfo.Text).Fail(scenarioContext.TestError.Message, MediaEntityBuilder.CreateScreenCaptureFromPath(screenshotPath).Build());
+                    _scenario!.CreateNode<Given>(scenarioContext.StepContext.StepInfo.Text).Fail(scenarioContext.TestError.Message, MediaEntityBuilder.CreateScreenCaptureFromPath(screenshotPath).Build());
                     break;
                 case Reqnroll.Bindings.StepDefinitionType.When:
                     screenshotPath = await playwrightDriverConfiguration.TakeScreenshotAsPathAsync(fileName);
-                    _scenario.CreateNode<When>(scenarioContext.StepContext.StepInfo.Text).Fail(scenarioContext.TestError.Message, MediaEntityBuilder.CreateScreenCaptureFromPath(screenshotPath).Build());
+                    _scenario!.CreateNode<When>(scenarioContext.StepContext.StepInfo.Text).Fail(scenarioContext.TestError.Message, MediaEntityBuilder.CreateScreenCaptureFromPath(screenshotPath).Build());
                     break;
                 case Reqnroll.Bindings.StepDefinitionType.Then:
                     screenshotPath = await playwrightDriverConfiguration.TakeScreenshotAsPathAsync(fileName);
-                    _scenario.CreateNode<Then>(scenarioContext.StepContext.StepInfo.Text).Fail(scenarioContext.TestError.Message, MediaEntityBuilder.CreateScreenCaptureFromPath(screenshotPath).Build());
+                    _scenario!.CreateNode<Then>(scenarioContext.StepContext.StepInfo.Text).Fail(scenarioContext.TestError.Message, MediaEntityBuilder.CreateScreenCaptureFromPath(screenshotPath).Build());
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
