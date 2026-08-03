@@ -1,15 +1,8 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+name: PR Test Pipeline
 
-name: Pull Request Build
-
-# ---------------------------------------------------------
-# 🧪 Trigger on Pull Requests + Push to Main
-# ---------------------------------------------------------
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-
   push:
     branches:
       - main
@@ -71,16 +64,15 @@ jobs:
         run: dotnet test AutomationFramework/AutomationFramework.csproj --no-build --verbosity normal --logger "trx;LogFileName=TestReport.trx"
 
       # ---------------------------------------------------------
-      # 📤 Upload TRX + Screenshots + Traces
+      # 🔍 DEBUG: Locate TestResults folder and contents
       # ---------------------------------------------------------
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: pr-test-results
-          path: |
-            **/*.trx
-            **/Screenshots/**
-            **/Traces/**
+      - name: Locate TestResults folder
+        run: |
+          echo "Searching for TestResults folders..."
+          find . -type d -name "TestResults"
+          echo ""
+          echo "Listing contents of all TestResults folders..."
+          find . -type d -name "TestResults" -exec sh -c 'echo "--- {} ---"; ls -R "{}"' \;
 
       # ---------------------------------------------------------
       # 📊 Parse TRX and Build Summary
@@ -88,7 +80,11 @@ jobs:
       - name: Parse TRX and build summary
         id: summary_data
         run: |
-          trx_file=$(find . -name "TestReport.trx" | head -n1)
+          trx_file=$(find AutomationFramework/TestResults -name "*.trx" | head -n1)
+          if [ -z "$trx_file" ]; then
+            echo "No TRX file found"
+            exit 1
+          fi
           export TRX_FILE="$trx_file"
           python .github/scripts/parse_trx.py
 
@@ -102,7 +98,23 @@ jobs:
           python .github/scripts/detect_flaky_tests.py
 
       # ---------------------------------------------------------
-      # 🖥️ Generate HTML Dashboard
+      # 🧮 Compute Status Message
+      # ---------------------------------------------------------
+      - name: Compute status message
+        id: status
+        env:
+          FAILED: ${{ steps.summary_data.outputs.failed }}
+        run: |
+          if [ "$FAILED" != "0" ]; then
+            echo "msg=❌ Some tests failed" >> $GITHUB_OUTPUT
+            echo "email=❌ Failures Detected" >> $GITHUB_OUTPUT
+          else
+            echo "msg=✅ All tests passed" >> $GITHUB_OUTPUT
+            echo "email=✅ All Tests Passed" >> $GITHUB_OUTPUT
+          fi
+
+      # ---------------------------------------------------------
+      # 🖥️ Generate HTML Dashboard (artifact only)
       # ---------------------------------------------------------
       - name: Generate HTML dashboard
         env:
@@ -118,6 +130,105 @@ jobs:
         run: python .github/scripts/generate_dashboard.py
 
       # ---------------------------------------------------------
+      # 🗂️ Combine all test results into a single clean folder
+      # ---------------------------------------------------------
+      - name: Combine test results into unified folder
+        run: |
+          mkdir combined-results
+
+          # Copy TRX files
+          find AutomationFramework -name "*.trx" -exec cp {} combined-results/ \;
+
+          # Copy ExtentReport
+          find AutomationFramework -name "ExtentReport.html" -exec cp {} combined-results/ \;
+
+          # Copy screenshots
+          mkdir -p combined-results/screenshots
+          find AutomationFramework -type f -name "*.png" -exec cp {} combined-results/screenshots/ \;
+
+          # -----------------------------------------------------
+          # 🥇 Bulletproof Playwright Trace Capture (Version B)
+          # -----------------------------------------------------
+          mkdir -p combined-results/traces
+
+          echo "Waiting for Playwright trace files..."
+          for i in $(seq 1 10); do
+            count=$(find . -type f -name "trace.zip" -o -name "*trace*.zip" | wc -l)
+            if [ "$count" -gt 0 ]; then
+              echo "Found $count trace files."
+              break
+            fi
+            echo "No traces yet... retrying ($i/10)"
+            sleep 1
+          done
+
+          echo "Copying trace files..."
+          find . -type f -name "trace.zip" -o -name "*trace*.zip" -exec cp {} combined-results/traces/ \;
+
+          echo "Final traces copied:"
+          ls -R combined-results/traces
+
+      # ---------------------------------------------------------
+      # 🧪 DEBUG: Show combined-results before upload
+      # ---------------------------------------------------------
+      - name: Debug Show combined-results before upload
+        run: |
+          echo "Combined-results folder contents:"
+          ls -R combined-results
+
+      # ---------------------------------------------------------
+      # 🏷️ Determine ZIP name dynamically
+      # ---------------------------------------------------------
+      - name: Set ZIP name
+        id: zipname
+        run: |
+          if [ "${{ github.event.pull_request.number }}" != "" ]; then
+            echo "zip_name=PR-${{ github.event.pull_request.number }}-artifacts.zip" >> $GITHUB_OUTPUT
+          else
+            echo "zip_name=commit-${{ github.sha }}-artifacts.zip" >> $GITHUB_OUTPUT
+          fi
+
+      # ---------------------------------------------------------
+      # 📦 Zip entire artifacts folder (for email only)
+      # ---------------------------------------------------------
+      - name: Zip all test artifacts
+        run: |
+          zip -r "${{ steps.zipname.outputs.zip_name }}" combined-results
+
+      # ---------------------------------------------------------
+      # 📤 Upload unified test results artifact
+      # ---------------------------------------------------------
+      - name: Upload unified test results artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.zipname.outputs.zip_name }}
+          path: combined-results/**
+
+      # ---------------------------------------------------------
+      # 🔐 Make summary script executable
+      # ---------------------------------------------------------
+      - name: Make summary script executable
+        run: chmod +x .github/scripts/write_summary.sh
+
+      # ---------------------------------------------------------
+      # 📝 Write Dashboard Summary to GitHub UI
+      # ---------------------------------------------------------
+      - name: Write summary to GitHub
+        run: .github/scripts/write_summary.sh
+        env:
+          TOTAL: ${{ steps.summary_data.outputs.total }}
+          PASSED: ${{ steps.summary_data.outputs.passed }}
+          FAILED: ${{ steps.summary_data.outputs.failed }}
+          DURATION: ${{ steps.summary_data.outputs.duration }}
+          FAILURE_RATE: ${{ steps.summary_data.outputs.failure_rate }}
+          FAILED_TABLE: ${{ steps.summary_data.outputs.failed_table }}
+          SLOW_TESTS: ${{ steps.summary_data.outputs.slow_tests }}
+          FLAKY_TESTS: ${{ steps.flaky.outputs.flaky_tests }}
+          ZIP_NAME: ${{ steps.zipname.outputs.zip_name }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+
+      # ---------------------------------------------------------
       # 📝 Post PR Comment
       # ---------------------------------------------------------
       - name: Post PR comment
@@ -125,27 +236,62 @@ jobs:
         with:
           recreate: true
           message: |
-            ## 🧪 Test Results
+            ## 🧪 Test Results Summary
+
+            **Status:** ${{ steps.status.outputs.msg }}
+
             **Total:** ${{ steps.summary_data.outputs.total }}  
-            **Passed:** ${{ steps.summary_data.outputs.passed }}  
-            **Failed:** ${{ steps.summary_data.outputs.failed }}  
-            **Duration:** ${{ steps.summary_data.outputs.duration }} seconds  
+            **Passed:** 🟢 ${{ steps.summary_data.outputs.passed }}  
+            **Failed:** 🔴 ${{ steps.summary_data.outputs.failed }}  
+            **Duration:** ⏱️ ${{ steps.summary_data.outputs.duration }} seconds  
             **Failure Rate:** ${{ steps.summary_data.outputs.failure_rate }} %
+
+            ---
 
             ### ❌ Failed Tests
             ${{ steps.summary_data.outputs.failed_table }}
 
-            ### 🐢 Slow Tests
+            ---
+
+            ### 🐢 Slowest Tests
+            <details>
+              <summary>Show slow tests</summary>
+
             ${{ steps.summary_data.outputs.slow_tests }}
 
+            </details>
+
+            ---
+
             ### 🔁 Flaky Tests
+            <details>
+              <summary>Show flaky test analysis</summary>
+
             ${{ steps.flaky.outputs.flaky_tests }}
 
+            </details>
+
+            ---
+
             ### 📊 Dashboard
-            Download the HTML dashboard from the workflow artifacts.
+            👉 **[Open Dashboard](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**
+
+            ---
+
+            ### 📦 Artifacts
+            **Artifact Name:** `${{ steps.zipname.outputs.zip_name }}`  
+            👉 **[Download Unified Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)**
+
+            Contains:
+            - TRX test results  
+            - ExtentReport HTML  
+            - screenshots/  
+            - traces/  
+
+            ---
 
       # ---------------------------------------------------------
-      # 📧 Always Send Email Notification (Improved Subject Line)
+      # 📧 Always Send Email Notification
       # ---------------------------------------------------------
       - name: Send email notification
         if: always()
@@ -159,18 +305,30 @@ jobs:
           from: "ci-bot <${{ secrets.SMTP_USERNAME }}>"
           subject: >
             PR #${{ github.event.pull_request.number }} —
-            ${{ steps.summary_data.outputs.failed != '0' && '❌ Failures Detected' || '✅ All Tests Passed' }}
-          body: |
-            The PR test pipeline has completed.
+            ${{ steps.status.outputs.email }}
+          html_body: |
+            <h2>PR Test Pipeline Completed</h2>
 
-            Total: ${{ steps.summary_data.outputs.total }}
-            Passed: ${{ steps.summary_data.outputs.passed }}
-            Failed: ${{ steps.summary_data.outputs.failed }}
-            Duration: ${{ steps.summary_data.outputs.duration }} seconds
-            Failure Rate: ${{ steps.summary_data.outputs.failure_rate }} %
+            <p><strong>Total:</strong> ${{ steps.summary_data.outputs.total }}</p>
+            <p><strong>Passed:</strong> ${{ steps.summary_data.outputs.passed }}</p>
+            <p><strong>Failed:</strong> ${{ steps.summary_data.outputs.failed }}</p>
+            <p><strong>Duration:</strong> ${{ steps.summary_data.outputs.duration }} seconds</p>
+            <p><strong>Failure Rate:</strong> ${{ steps.summary_data.outputs.failure_rate }} %</p>
 
-            Flaky tests:
-            ${{ steps.flaky.outputs.flaky_tests }}
+            <h3>Flaky Tests</h3>
+            <pre>${{ steps.flaky.outputs.flaky_tests }}</pre>
 
-            Dashboard and artifacts are available in GitHub Actions.
+            <h3>Attachments</h3>
+            <p>The ZIP file contains a unified test results package:</p>
+            <ul>
+              <li>TestReport.trx</li>
+              <li>ExtentReport.html</li>
+              <li>screenshots/ (PNG files)</li>
+              <li>traces/ (Playwright trace ZIPs)</li>
+            </ul>
 
+            <p>You can also view the full run here:</p>
+            <p><a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">Open GitHub Actions Run</a></p>
+
+          attachments: |
+            ${{ steps.zipname.outputs.zip_name }}
