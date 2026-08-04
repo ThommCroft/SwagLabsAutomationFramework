@@ -83,7 +83,7 @@ jobs:
       # 🎭 Ensure Playwright Browsers Installed
       # ---------------------------------------------------------
       - name: Ensure browsers are installed
-        run: pwsh ${{ github.workspace }}/AutomationFramework/bin/Debug/net8.0/playwright.ps1 install --with-deps
+        run: pwsh ${{ github.workspace }}/AutomationFramework/bin/Debug/net10.0/playwright.ps1 install --with-deps
 
       # ---------------------------------------------------------
       # 🧪 Run Tests
